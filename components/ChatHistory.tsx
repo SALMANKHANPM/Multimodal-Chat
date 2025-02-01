@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Message } from "@/types";
 import { Search, MessageSquare, Bot, User, Clock, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/language';
 
 interface ChatHistoryProps {
   messages: Message[];
@@ -16,6 +17,7 @@ interface ChatHistoryProps {
 
 export function ChatHistory({ messages, onSelectChat, currentChatIndex }: ChatHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const { translations } = useLanguage();
 
   const chats = messages.reduce((acc: { title: string; preview: string; timestamp: string }[], message, index) => {
     if (message.role === 'user' && (!acc.length || index > 0)) {
@@ -43,12 +45,12 @@ export function ChatHistory({ messages, onSelectChat, currentChatIndex }: ChatHi
       <div className="p-4 border-b">
         <div className="flex items-center gap-2 mb-4">
           <Bot className="h-5 w-5" />
-          <h2 className="font-semibold">Chat History</h2>
+          <h2 className="font-semibold">{translations.chatHistory}</h2>
         </div>
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search conversations..."
+            placeholder={translations.searchConversations}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-8"
@@ -86,7 +88,7 @@ export function ChatHistory({ messages, onSelectChat, currentChatIndex }: ChatHi
           ) : (
             <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
               <MessageSquare className="h-8 w-8 mb-2" />
-              <p className="text-sm">No conversations found</p>
+              <p className="text-sm">{translations.noConversationsFound}</p>
             </div>
           )}
         </div>

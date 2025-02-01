@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface LanguageSelectorProps {
   onLanguageSelect: (sourceLang: string, targetLang: string) => void;
@@ -19,9 +20,12 @@ export function LanguageSelector({ onLanguageSelect }: LanguageSelectorProps) {
   const [open, setOpen] = useState(true);
   const [selectedLang, setSelectedLang] = useState<string>('tel');
 
+  const { setLanguage } = useLanguage();
+
   const handleSelect = () => {
     const targetLang = selectedLang === 'tel' ? 'eng' : 'tel';
     onLanguageSelect(selectedLang, targetLang);
+    setLanguage(selectedLang);
     setOpen(false);
   };
 

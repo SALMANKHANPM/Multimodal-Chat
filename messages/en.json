@@ -1,0 +1,19 @@
+{
+  "selectLanguage": "Select Your Language",
+  "continue": "Continue",
+  "aiAssistant": "AI Assistant",
+  "howCanIHelp": "How can I help you today?",
+  "sendMessage": "Send a message, image, or voice recording to get started.",
+  "availableFeatures": "Available Features:",
+  "uploadImages": "Upload images for visual analysis",
+  "uploadAudio": "Upload audio files",
+  "recordVoice": "Record voice messages",
+  "sendMessages": "Send messages (Shift + Enter for new line)",
+  "typeMessage": "Type your message... (Shift + Enter for new line)",
+  "processing": "Processing...",
+  "chatHistory": "Chat History",
+  "searchConversations": "Search conversations...",
+  "mediaMessage": "Media message",
+  "aiResponse": "AI Response",
+  "noConversationsFound": "No conversations found"
+}

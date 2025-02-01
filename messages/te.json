@@ -1,0 +1,19 @@
+{
+  "selectLanguage": "మీ భాషను ఎంచుకోండి",
+  "continue": "కొనసాగించు",
+  "aiAssistant": "AI సహాయకుడు",
+  "howCanIHelp": "నేను ఈరోజు మీకు ఎలా సహాయం చేయగలను?",
+  "sendMessage": "ప్రారంభించడానికి సందేశం, చిత్రం లేదా వాయిస్ రికార్డింగ్‌ను పంపండి.",
+  "availableFeatures": "అందుబాటులో ఉన్న ఫీచర్లు:",
+  "uploadImages": "విజువల్ విశ్లేషణ కోసం చిత్రాలను అప్‌లోడ్ చేయండి",
+  "uploadAudio": "ఆడియో ఫైల్‌లను అప్‌లోడ్ చేయండి",
+  "recordVoice": "వాయిస్ సందేశాలను రికార్డ్ చేయండి",
+  "sendMessages": "సందేశాలను పంపండి (కొత్త లైన్ కోసం Shift + Enter)",
+  "typeMessage": "మీ సందేశాన్ని టైప్ చేయండి... (కొత్త లైన్ కోసం Shift + Enter)",
+  "processing": "ప్రాసెసింగ్...",
+  "chatHistory": "చాట్ చరిత్ర",
+  "searchConversations": "సంభాషణలను శోధించండి...",
+  "mediaMessage": "మీడియా సందేశం",
+  "aiResponse": "AI ప్రతిస్పందన",
+  "noConversationsFound": "సంభాషణలు కనుగొనబడలేదు"
+}

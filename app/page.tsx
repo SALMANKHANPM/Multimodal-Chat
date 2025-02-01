@@ -26,8 +26,10 @@ import { AudioRecorder } from "@/components/AudioRecorder";
 import { ChatHistory } from "@/components/ChatHistory";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ProcessOptions }  from "@/types/index";
+import { useLanguage } from "@/contexts/language";
 
 export default function Home() {
+  const { translations } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -220,7 +222,7 @@ export default function Home() {
                 )}
               </Button>
               <Sparkles className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-semibold">AI Assistant</h1>
+              <h1 className="text-xl font-semibold">{translations.aiAssistant}</h1>
             </div>
             <div className="flex gap-2">
               <Button
@@ -255,19 +257,19 @@ export default function Home() {
           
           {showHelp && (
             <Card className="p-4 mb-4 bg-muted/50">
-              <h2 className="font-semibold mb-2">Available Features:</h2>
+              <h2 className="font-semibold mb-2">{translations.availableFeatures}</h2>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2">
-                  <ImagePlus className="h-4 w-4" /> Upload images for visual analysis
+                  <ImagePlus className="h-4 w-4" /> {translations.uploadImages}
                 </li>
                 <li className="flex items-center gap-2">
-                  <Music className="h-4 w-4" /> Upload audio files
+                  <Music className="h-4 w-4" /> {translations.uploadAudio}
                 </li>
                 <li className="flex items-center gap-2">
-                  <Bot className="h-4 w-4" /> Record voice messages
+                  <Bot className="h-4 w-4" /> {translations.recordVoice}
                 </li>
                 <li className="flex items-center gap-2">
-                  <SendHorizontal className="h-4 w-4" /> Send messages (Shift + Enter for new line)
+                  <SendHorizontal className="h-4 w-4" /> {translations.sendMessage}
                 </li>
               </ul>
             </Card>
@@ -279,8 +281,8 @@ export default function Home() {
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground">
                     <Bot className="h-12 w-12 mb-4" />
-                    <p className="text-lg font-medium">How can I help you today?</p>
-                    <p className="text-sm">Send a message, image, or voice recording to get started.</p>
+                    <p className="text-lg font-medium">{translations.howCanIHelp}</p>
+                    <p className="text-sm">{translations.sendMessage}</p>
                   </div>
                 ) : (
                   messages.map((message, index) => (
@@ -447,7 +449,7 @@ export default function Home() {
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type your message... (Shift + Enter for new line)"
+                  placeholder={translations.typeMessage}
                   className="flex-1"
                   disabled={isRecording}
                   onKeyDown={(e) => {
