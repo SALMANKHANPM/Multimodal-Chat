@@ -21,13 +21,23 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateText, processPrompt } from "@/lib/api";
-import { Message } from "@/types";
+import { LLMResponse, Message } from "@/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { ChatHistory } from "@/components/ChatHistory";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ProcessOptions }  from "@/types/index";
 import { useLanguage } from "@/contexts/language";
+
+interface TranscriptionResponse {
+  transcription: string;
+  translation: string;
+}
+
+interface ProcessResponse {
+  status: string;
+  response: string | TranscriptionResponse | LLMResponse;
+}
 
 export default function ChatProvider() {
   const { translations } = useLanguage();
@@ -117,14 +127,48 @@ export default function ChatProvider() {
         options.audio_data = base64Audio;
       }
 
-      const result = await processPrompt(input, options);
+      const result = await processPrompt(input, options) as ProcessResponse;
 
       if (result.status === "success") {
-        const aiResponse: Message = {
-          role: "assistant",
-          content: result.response,
-        };
-        setMessages((prev) => [...prev, aiResponse]);
+        if (selectedAudioBlob) {
+          // Add transcription message
+          const transcriptionResponse = result.response as ProcessResponse | TranscriptionResponse | any;
+          console.log("=============  Transcription Response  ==========")
+          console.log(transcriptionResponse)
+          const transcriptionMessage: Message = {
+            role: "assistant",
+            content: (
+              <div className="space-y-2">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-primary">Telugu: </span>
+                    <span className="text-foreground">{transcriptionResponse.tel}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-primary">English: </span>
+                    <span className="text-foreground">{transcriptionResponse.eng}</span>
+                  </div>
+                  <div className="mt-2 text-foreground">{transcriptionResponse.generation}</div>
+                </div>
+              </div>
+              
+            )
+          };
+          setMessages((prev) => [...prev, transcriptionMessage]);
+        } else {
+          const llmResponse = result.response as ProcessResponse | any;
+          const aiResponse: Message = {
+            role: "assistant",
+            content: (
+              <div className="space-y-2">
+                <div className="flex flex-col gap-1">
+                  <div className="mt-2 text-foreground">{llmResponse.generation}</div>
+                </div>
+              </div>
+            )
+          };
+          setMessages((prev) => [...prev, aiResponse]);
+        }
       } else {
         const errorMessage: Message = {
           role: "error",
@@ -313,7 +357,7 @@ export default function ChatProvider() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <p
+                        <div
                           className={cn(
                             "text-sm whitespace-pre-wrap",
                             message.role === "error"
@@ -322,7 +366,7 @@ export default function ChatProvider() {
                           )}
                         >
                           {message.content}
-                        </p>
+                        </div>
                         {message.images && (
                           <div className="grid grid-cols-1 gap-2 mt-2">
                             {message.images.map((img, imgIndex) => (

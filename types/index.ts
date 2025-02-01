@@ -14,3 +14,18 @@ export interface ProcessOptions {
   sourceLang?: string;
   targetLang?: string;
 }
+
+export interface TranscriptionResponse {
+  tel: string | null;
+  eng: string | null;
+  generation: string;
+}
+
+export interface LLMResponse {
+  generation: string;
+}
+
+export interface ProcessResponse {
+  status: string;
+  response: string | TranscriptionResponse | LLMResponse;
+}

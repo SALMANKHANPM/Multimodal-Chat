@@ -1,6 +1,6 @@
 import { ProcessOptions } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 export async function validateText(text: string): Promise<{ validator_status: string; reason: string | null }> {
   const response = await fetch(`${API_BASE_URL}/api/py/validate`, {
@@ -18,7 +18,9 @@ export async function validateText(text: string): Promise<{ validator_status: st
   return response.json();
 }
 
-export async function processPrompt(prompt: string, options?: ProcessOptions): Promise<{ status: string; response: string }> {
+export async function processPrompt(prompt: string, options?: ProcessOptions): Promise<{ status: string; response: { tel: string | null; eng: string | null; generation: string } }> {
+  let transcriptionData = { transcription: null, translation: null };
+
   // If there's audio data, transcribe it first
   if (options?.audio_data) {
     try {
@@ -46,17 +48,17 @@ export async function processPrompt(prompt: string, options?: ProcessOptions): P
         throw new Error(error.detail || 'Transcription failed');
       }
 
-      const transcriptionResult = await transcriptionResponse.json();
+      transcriptionData = await transcriptionResponse.json();
       
-      // Append transcription to prompt
-      prompt = `${prompt}\n\nTranscribed Audio: ${transcriptionResult.transcription}\nTranslation: ${transcriptionResult.translation}`;
+      // Append transcription to prompt for LLM processing
+      prompt = `${prompt}\n\nTranscribed Audio: ${transcriptionData.transcription}\nTranslation: ${transcriptionData.translation}`;
     } catch (error) {
       console.error('Transcription error:', error);
       throw new Error('Failed to process audio input');
     }
   }
 
-  // Send the final request with all modalities
+  // Send the final request with all modalities and options
   const response = await fetch(`${API_BASE_URL}/api/py/process`, {
     method: 'POST',
     headers: {
@@ -65,7 +67,11 @@ export async function processPrompt(prompt: string, options?: ProcessOptions): P
     body: JSON.stringify({ 
       prompt,
       options: {
-        ...options,
+        temperature: options?.temperature,
+        maxTokens: options?.maxTokens,
+        image_data: options?.image_data,
+        sourceLang: options?.sourceLang,
+        targetLang: options?.targetLang,
         // Remove audio_data as it's been processed
         audio_data: undefined
       }
@@ -77,5 +83,15 @@ export async function processPrompt(prompt: string, options?: ProcessOptions): P
     throw new Error(error.error || 'Processing request failed');
   }
 
-  return response.json();
+  const result = await response.json();
+  
+  // Return structured response with transcription, translation, and LLM output
+  return {
+    status: "success",
+    response: {
+      tel: transcriptionData.transcription || null,
+      eng: transcriptionData.translation || null,
+      generation: result.response
+    }
+  };
 }
