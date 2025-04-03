@@ -40,7 +40,7 @@ interface MenuItem {
   items?: MenuItem[];
 }
 
-interface Navbar1Props {
+interface NavbarProps {
   logo?: {
     url: string;
     src: string;
@@ -48,6 +48,10 @@ interface Navbar1Props {
     title: string;
   };
   menu?: MenuItem[];
+  dashboard?: {
+    title: string;
+    url: string;
+  };
   auth?: {
     login: {
       title: string;
@@ -60,7 +64,7 @@ interface Navbar1Props {
   };
 }
 
-const Navbar1 = ({
+const Navbar = ({
   menu = [
     {
       title: "Features",
@@ -75,11 +79,15 @@ const Navbar1 = ({
       url: "#",
     },
   ],
-  auth = {
-    login: { title: "Login", url: "#" },
-    signup: { title: "Sign up", url: "#" },
+  dashboard = {
+    title: "Dashboard",
+    url: "/dashboard",
   },
-}: Navbar1Props) => {
+  auth = {
+    login: { title: "Login", url: "/login" },
+    signup: { title: "Sign up", url: "/signup" },
+  },
+}: NavbarProps) => {
   return (
     <div>
       <section className="p-2 bg-background flex items-center justify-center">
@@ -102,6 +110,9 @@ const Navbar1 = ({
               </div>
             </div>
             <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <a href={dashboard.url}>{dashboard.title}</a>
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <a href={auth.login.url}>{auth.login.title}</a>
               </Button>
@@ -144,11 +155,14 @@ const Navbar1 = ({
                     </Accordion>
 
                     <div className="flex flex-col gap-3">
+                      <Button asChild variant="default">
+                        <a href={dashboard.url}>{dashboard.title}</a>
+                      </Button>
                       <Button asChild variant="outline">
-                        <a href={auth.login.url}>{auth.login.title}</a>
+                        <a  href={auth.login.url}>{auth.login.title}</a>
                       </Button>
                       <Button asChild>
-                        <a href={auth.signup.url}>{auth.signup.title}</a>
+                        <a  href={auth.signup.url}>{auth.signup.title}</a>
                       </Button>
                     </div>
                   </div>
@@ -232,4 +246,4 @@ const SubMenuLink = ({ item }: { item: MenuItem }) => {
   );
 };
 
-export { Navbar1 };
+export { Navbar };
