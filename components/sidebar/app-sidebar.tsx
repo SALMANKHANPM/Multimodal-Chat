@@ -40,10 +40,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-import  NavbarLogo  from "@/components/logos/NavBarLogo";
+import NavbarLogo from "@/components/logos/NavBarLogo";
 import { Separator } from "../ui/separator";
 
-// Define the NavItem type
 type NavItem = {
   title: string
   url: string
@@ -51,7 +50,6 @@ type NavItem = {
   status?: "new" | "wip" | "down"
 }
 
-// Then update your data object to use this type
 const data = {
   user: {
     name: "shadcn",
@@ -83,17 +81,15 @@ const data = {
       url: "/dashboard/practice/textMatching",
       icon: IconLanguage,
       status: "wip"
-      
-
     },
     {
-      title : "Quiz",
-      url: "/dashboard/practice/quiz",
+      title: "Quiz",
+      url: "/dashboard/practice/quiz", 
       icon: IconPencilQuestion,
       status: "wip"
     },
     {
-      title : "Speaking Exercise",
+      title: "Speaking Exercise",
       url: "/dashboard/practice/speaking",
       icon: IconLanguage,
       status: "down"
@@ -108,50 +104,43 @@ const data = {
       status: "down"
     },
     {
-      title: "Learn to Write",
+      title: "Learn to Write", 
       url: "/dashboard/learn/write",
       icon: IconWriting,
       status: "down"
     },
-  ]as NavItem[],
+  ] as NavItem[],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="pb-0">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              
-            >
-              <div className="flex flex-col items-center justify-center p-10">
-              <NavbarLogo/>
-
+            <SidebarMenuButton asChild>
+              <div className="flex flex-col items-center justify-center p-6">
+                <NavbarLogo />
               </div>
-
             </SidebarMenuButton>
-           
             <SidebarMenuButton>
-            <span className="text-bold font-italic text-xl font-semibold pl-8">Conversational AI</span>
+              <span className="text-xl font-semibold text-center w-full">
+                Conversational AI
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <Separator />
-      <SidebarContent className="p-2">
+      <Separator className="my-2" />
+      <SidebarContent className="px-2 py-4">
         <NavMain items={data.navHome} category="Summary" />
         <NavMain items={data.navChat} category="Chat" />
         <NavMain items={data.navLearn} category="Learn Now" />
         <NavMain items={data.navPractice} category="Practice" />
-
-
-        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
 
-      <SidebarFooter>
-      <SidebarGroupLabel>Profile</SidebarGroupLabel>
+      <SidebarFooter className="mt-auto">
+        <SidebarGroupLabel>Profile</SidebarGroupLabel>
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
