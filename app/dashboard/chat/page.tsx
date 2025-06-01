@@ -4,18 +4,18 @@ import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import {
   SendHorizontal,
   ImagePlus,
   Bot,
-  User,
-  AlertCircle,
   Music,
   Trash2,
-  HelpCircle,
   Sparkles,
   X,
+  ChevronDown,
+  Check,
+  Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateText, processPrompt } from "@/lib/api";
@@ -26,14 +26,26 @@ import {
   ProcessResponse,
   TranscriptionResponse,
 } from "@/lib/types";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AudioRecorder } from "@/components/AudioRecorder";
-import { ChatHistory } from "@/components/ChatHistory";
-import { TextShimmer } from "@/components/ui/text-shimmer";
 import { ChatMessage } from "./chat-messages";
+import { TextShimmer } from "@/components/ui/text-shimmer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const AI_MODELS = [
+  "GPT-4-1 Mini",
+  "GPT-4-1",
+  "Claude 3.5 Sonnet",
+  "Gemini 2.5 Flash",
+];
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -45,12 +57,20 @@ export default function Chat() {
   const [isRecording, setIsRecording] = useState(false);
   const [sourceLang, setSourceLang] = useState<string>("tel");
   const [targetLang, setTargetLang] = useState<string>("eng");
+  const [selectedModel, setSelectedModel] = useState("GPT-4-1 Mini");
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  };
 
   const convertBlobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -78,6 +98,9 @@ export default function Chat() {
       };
       setMessages((prev) => [...prev, newMessage]);
       setInput("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
       setSelectedImages([]);
 
       let options: ProcessOptions = {
@@ -315,80 +338,112 @@ export default function Chat() {
             </div>
           )}
 
-          <div className="flex gap-2">
-            <div className="flex">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                className="rounded-l-md rounded-r-none border-r-0"
-                disabled={isRecording}
-              >
-                <ImagePlus className="h-5 w-5" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => audioInputRef.current?.click()}
-                className="rounded-none border-x-0"
-                disabled={isRecording}
-              >
-                <Music className="h-5 w-5" />
-              </Button>
-              <div className="rounded-l-none rounded-r-md border-l-0">
-                <AudioRecorder
-                  onAudioCaptured={handleAudioCaptured}
-                  onRecordingStateChange={setIsRecording}
-                  sourceLang={sourceLang}
-                />
+          <div className="relative rounded-xl border bg-background shadow-sm">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                adjustTextareaHeight();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder="Message Conversational AI..."
+              className="min-h-[60px] w-full resize-none border-0 bg-transparent px-4 py-[1.3rem] pr-20 focus-visible:ring-0 focus-visible:ring-offset-0 sm:text-sm"
+              disabled={isRecording}
+            />
+            
+            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+              <div className="flex items-center gap-0.5">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 px-2 text-xs text-muted-foreground"
+                    >
+                      {selectedModel}
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    {AI_MODELS.map((model) => (
+                      <DropdownMenuItem
+                        key={model}
+                        onClick={() => setSelectedModel(model)}
+                        className="flex items-center justify-between"
+                      >
+                        {model}
+                        {selectedModel === model && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <div className="flex">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isRecording}
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => audioInputRef.current?.click()}
+                    disabled={isRecording}
+                  >
+                    <Music className="h-4 w-4" />
+                  </Button>
+                  <AudioRecorder
+                    onAudioCaptured={handleAudioCaptured}
+                    onRecordingStateChange={setIsRecording}
+                    sourceLang={sourceLang}
+                  />
+                </div>
               </div>
-            </div>
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              accept="image/*"
-              className="hidden"
-            />
-            <input
-              type="file"
-              ref={audioInputRef}
-              onChange={handleAudioUpload}
-              accept="audio/*"
-              className="hidden"
-            />
-
-            <div className="relative flex-1">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Message Conversational AI..."
-                className="pr-12"
-                disabled={isRecording}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-              />
               <Button
                 type="submit"
                 size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2"
+                className="h-8 w-8"
                 disabled={
                   isLoading ||
                   isRecording ||
                   (!input.trim() && !selectedImages.length && !selectedAudio)
                 }
               >
-                <SendHorizontal className="h-5 w-5" />
+                <SendHorizontal className="h-4 w-4" />
               </Button>
             </div>
           </div>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            accept="image/*"
+            className="hidden"
+          />
+          <input
+            type="file"
+            ref={audioInputRef}
+            onChange={handleAudioUpload}
+            accept="audio/*"
+            className="hidden"
+          />
         </form>
       </div>
     </div>
