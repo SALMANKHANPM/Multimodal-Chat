@@ -15,9 +15,6 @@ import {
   Trash2,
   HelpCircle,
   Sparkles,
-  PanelLeftClose,
-  PanelLeftOpen,
-  ChevronRight,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,20 +29,11 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { ChatHistory } from "@/components/ChatHistory";
-import {
-  RiCodeSSlashLine,
-  RiShareLine,
-  RiShareCircleLine,
-  RiShining2Line,
-  RiAttachment2,
-  RiMicLine,
-  RiLeafLine,
-} from "@remixicon/react";
-import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
+import { ChatMessage } from "./chat-messages";
+
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -54,24 +42,9 @@ export default function Chat() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
   const [selectedAudioBlob, setSelectedAudioBlob] = useState<Blob | null>(null);
-  const [isPreparing, setIsPreparing] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [alert, setAlert] = useState<{
-    title: string;
-    description: string;
-    variant?: "default" | "destructive";
-  } | null>(null);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [sourceLang, setSourceLang] = useState<string>("tel");
   const [targetLang, setTargetLang] = useState<string>("eng");
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -128,11 +101,7 @@ export default function Chat() {
 
       if (result.status === "success") {
         if (selectedAudioBlob) {
-          // Add transcription message
-          const transcriptionResponse =
-            result.response as TranscriptionResponse;
-          console.log("=============  Transcription Response  ==========");
-          console.log(transcriptionResponse);
+          const transcriptionResponse = result.response as TranscriptionResponse;
           const transcriptionMessage: Message = {
             role: "assistant",
             content: (
@@ -167,15 +136,6 @@ export default function Chat() {
           setMessages((prev) => [...prev, aiResponse]);
         }
       } else {
-        setAlert({
-          title: "Error",
-          description:
-            typeof result.response === "string"
-              ? result.response
-              : "An error occurred while processing your request.",
-          variant: "destructive",
-        });
-
         const errorMessage: Message = {
           role: "error",
           content:
@@ -186,15 +146,6 @@ export default function Chat() {
         setMessages((prev) => [...prev, errorMessage]);
       }
     } catch (error) {
-      setAlert({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-        variant: "destructive",
-      });
-
       const errorMessage: Message = {
         role: "error",
         content:
@@ -209,18 +160,10 @@ export default function Chat() {
       setSelectedAudioBlob(null);
     }
   };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
-    if (files.length > 1) {
-      setAlert({
-        title: "Warning",
-        description: "Only the first image will be processed by the AI.",
-        variant: "default",
-      });
-    }
-
     const newImages = Array.from(files)
       .slice(0, 1)
       .map((file) => URL.createObjectURL(file));
@@ -230,11 +173,16 @@ export default function Chat() {
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     const audioFile = files[0];
     const audioUrl = URL.createObjectURL(audioFile);
     setSelectedAudio(audioUrl);
     setSelectedAudioBlob(audioFile);
+  };
+
+  const handleAudioCaptured = (audioBlob: Blob) => {
+    const audioUrl = URL.createObjectURL(audioBlob);
+    setSelectedAudio(audioUrl);
+    setSelectedAudioBlob(audioBlob);
   };
 
   const clearChat = () => {
@@ -245,171 +193,120 @@ export default function Chat() {
     setSelectedAudioBlob(null);
   };
 
-  const handleAudioCaptured = (audioBlob: Blob) => {
-    const audioUrl = URL.createObjectURL(audioBlob);
-    setSelectedAudio(audioUrl);
-    setSelectedAudioBlob(audioBlob);
-  };
-
-  // Render chat messages dynamically based on the messages state
-  const renderChatMessages = () => {
-    if (messages.length === 0) {
-      return (
-        <div className="text-center my-8">
-          <div className="inline-flex items-center bg-white rounded-full border border-black/[0.08] shadow-xs text-xs font-medium py-1 px-3 text-foreground/80">
-            <RiShining2Line
-              className="me-1.5 text-muted-foreground/70 -ms-1"
-              size={14}
-              aria-hidden="true"
-            />
-            Start a conversation
-          </div>
-          {/* <ChatMessage isUser={false}></ChatMessage> */}
-        </div>
-      );
-    }
-
-    return (
-      <>
-        <div className="text-center my-8">
-          <div className="inline-flex items-center bg-white rounded-full border border-black/[0.08] shadow-xs text-xs font-medium py-1 px-3 text-foreground/80">
-            <RiShining2Line
-              className="me-1.5 text-muted-foreground/70 -ms-1"
-              size={14}
-              aria-hidden="true"
-            />
-            Today
-          </div>
-        </div>
-        {messages.map((message, index) => (
-          <ChatMessage
-            key={index}
-            isUser={message.role === "user"}
-            isError={message.role === "error"}
-          >
-            {typeof message.content === "string" ? (
-              <p>{message.content}</p>
-            ) : (
-              message.content
-            )}
-            {message.images && message.images.length > 0 && (
-              <div className="mt-2">
-                {message.images.map((img, imgIndex) => (
-                  <img
-                    key={imgIndex}
-                    src={img}
-                    alt={`Uploaded ${imgIndex + 1}`}
-                    className="max-h-60 rounded-md mt-2 hover:opacity-90 transition-opacity cursor-pointer"
-                  />
-                ))}
-              </div>
-            )}
-            {message.audio && (
-              <div className="mt-2">
-                <audio
-                  controls
-                  src={message.audio}
-                  className="w-full rounded-md bg-background"
-                />
-              </div>
-            )}
-          </ChatMessage>
-        ))}
-        {isLoading && (
-          <ChatMessage>
-            <TextShimmer className="font-mono text-sm" duration={1}>
-              Generating response...
-            </TextShimmer>
-          </ChatMessage>
-        )}
-      </>
-    );
-  };
-
   return (
-    <div className="sticky top-0 w-full h-full flex flex-col shadow-md md:rounded-s-[inherit] min-[1024px]:rounded-e-3xl bg-background">
-      {/* Header */}
-      <div className="py-5 sticky bg-background top-0 z-10 px-4 md:px-6 lg:px-8 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-black/[0.06] before:via-black/10 before:to-black/[0.06]">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">translations.aiAssistant</h1>
-          </div>
-
-          <div className="flex items-center justify-center">
-            {messages.length > 0 ? (
-              <Button
-                variant="ghost"
-                onClick={clearChat}
-                className="text-muted-foreground h-10 w-10 p-0"
-                title="Clear chat"
-              >
-                <Trash2 className="h-6 w-6" />
-                <span className="sr-only">Clear</span>
-              </Button>
-            ) : (
-              <div className="w-10 h-10"></div>
-            )}
-          </div>
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-semibold">Chat Assistant</h1>
         </div>
+        {messages.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={clearChat}
+            className="text-muted-foreground"
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        )}
       </div>
-      <ScrollArea>
-        <div className="flex-grow overflow-y-auto px-4 md:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto mt-6 space-y-6 pb-6">
-            {renderChatMessages()}
-            <div ref={messagesEndRef} aria-hidden="true" />
-          </div>
+
+      <ScrollArea className="flex-1 p-4">
+        <div className="mx-auto max-w-3xl space-y-6">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Bot className="mb-4 h-12 w-12 text-muted-foreground" />
+              <h2 className="mb-2 text-lg font-medium">How can I help you today?</h2>
+              <p className="text-sm text-muted-foreground">
+                Ask me anything about learning Telugu or English
+              </p>
+            </div>
+          ) : (
+            messages.map((message, index) => (
+              <ChatMessage
+                key={index}
+                isUser={message.role === "user"}
+                isError={message.role === "error"}
+              >
+                {typeof message.content === "string" ? (
+                  <p>{message.content}</p>
+                ) : (
+                  message.content
+                )}
+                {message.images && (
+                  <div className="mt-3 grid gap-3">
+                    {message.images.map((img, imgIndex) => (
+                      <img
+                        key={imgIndex}
+                        src={img}
+                        alt={`Uploaded ${imgIndex + 1}`}
+                        className="max-h-60 rounded-lg object-contain"
+                      />
+                    ))}
+                  </div>
+                )}
+                {message.audio && (
+                  <div className="mt-3">
+                    <audio
+                      controls
+                      src={message.audio}
+                      className="w-full rounded-lg"
+                    />
+                  </div>
+                )}
+              </ChatMessage>
+            ))
+          )}
+          {isLoading && (
+            <ChatMessage>
+              <TextShimmer className="font-mono text-sm">
+                Generating response...
+              </TextShimmer>
+            </ChatMessage>
+          )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
-      <div
-        className="sticky bottom-0 left-0 right-0 z-10 bg-background shadow-sm flex-shrink-0 border-t mt-auto p-10
-        md:px-6 lg:px-8 py-4 max-w-3xl mx-auto w-full"
-      >
-        <form
-          onSubmit={handleSubmit}
-          className="px-4 md:px-6 lg:px-8 py-3 max-w-3xl mx-auto w-full"
-        >
+      <div className="border-t bg-background p-4">
+        <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
           {(selectedImages.length > 0 || selectedAudio) && (
-            <div className="mb-3 p-3 bg-muted/70 rounded-lg border border-muted">
-              <div className="flex flex-wrap gap-2">
+            <div className="mb-4 rounded-lg border bg-background/50 p-3">
+              <div className="flex flex-wrap gap-3">
                 {selectedImages.map((img, index) => (
-                  <div key={index} className="relative group">
+                  <div key={index} className="relative">
                     <img
                       src={img}
                       alt={`Preview ${index + 1}`}
-                      className="h-20 w-20 object-cover rounded-md border border-muted shadow-sm"
+                      className="h-20 w-20 rounded-lg border object-cover"
                     />
                     <Button
                       type="button"
                       variant="destructive"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-90 shadow-sm"
+                      className="absolute -right-2 -top-2 h-6 w-6 rounded-full"
                       onClick={() => setSelectedImages([])}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
                 {selectedAudio && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-muted">
-                      <audio
-                        controls
-                        src={selectedAudio}
-                        className="flex-1 max-w-full"
-                      />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 rounded-lg border bg-background p-2">
+                      <audio controls src={selectedAudio} className="flex-1" />
                       <Button
                         type="button"
                         variant="destructive"
                         size="icon"
-                        className="absolute -top-2 -le h-6 w-6 rounded-full opacity-90 shadow-sm"
+                        className="h-8 w-8"
                         onClick={() => {
                           setSelectedAudio(null);
                           setSelectedAudioBlob(null);
                         }}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -417,16 +314,15 @@ export default function Chat() {
               </div>
             </div>
           )}
-          {/* Footer */}
-          <div className="flex flex-col sm:flex-row gap-2 w-full">
-            <div className="flex items-center">
+
+          <div className="flex gap-2">
+            <div className="flex">
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
                 className="rounded-l-md rounded-r-none border-r-0"
-                title="Upload Image"
                 disabled={isRecording}
               >
                 <ImagePlus className="h-5 w-5" />
@@ -436,42 +332,42 @@ export default function Chat() {
                 variant="outline"
                 size="icon"
                 onClick={() => audioInputRef.current?.click()}
-                className="rounded-none border-x-0 "
-                title="Upload Audio"
+                className="rounded-none border-x-0"
                 disabled={isRecording}
               >
                 <Music className="h-5 w-5" />
               </Button>
-              <div>
+              <div className="rounded-l-none rounded-r-md border-l-0">
                 <AudioRecorder
                   onAudioCaptured={handleAudioCaptured}
                   onRecordingStateChange={setIsRecording}
                   sourceLang={sourceLang}
                 />
               </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              <input
-                type="file"
-                ref={audioInputRef}
-                onChange={handleAudioUpload}
-                accept="audio/*"
-                className="hidden"
-              />
             </div>
 
-            <div className="flex-1 flex items-center gap-2 w-full">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <input
+              type="file"
+              ref={audioInputRef}
+              onChange={handleAudioUpload}
+              accept="audio/*"
+              className="hidden"
+            />
+
+            <div className="relative flex-1">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="flex-1 shadow-sm"
+                placeholder="Message Conversational AI..."
+                className="pr-12"
                 disabled={isRecording}
-                placeholder="Type your message..."
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -479,16 +375,15 @@ export default function Chat() {
                   }
                 }}
               />
-
               <Button
                 type="submit"
                 size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2"
                 disabled={
                   isLoading ||
                   isRecording ||
                   (!input.trim() && !selectedImages.length && !selectedAudio)
                 }
-                className="bg-primary hover:bg-primary/90 shadow-sm"
               >
                 <SendHorizontal className="h-5 w-5" />
               </Button>
