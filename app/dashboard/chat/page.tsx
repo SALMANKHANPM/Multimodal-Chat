@@ -218,7 +218,7 @@ export default function Chat() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex items-center justify-between border-b px-6 py-4">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           <h1 className="text-lg font-semibold">Chat Assistant</h1>
@@ -235,7 +235,7 @@ export default function Chat() {
         )}
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 px-6 py-6">
         <div className="mx-auto max-w-3xl space-y-6">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -292,10 +292,10 @@ export default function Chat() {
         </div>
       </ScrollArea>
 
-      <div className="border-t bg-background p-4">
+      <div className="border-t bg-background px-6 py-4">
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
           {(selectedImages.length > 0 || selectedAudio) && (
-            <div className="mb-4 rounded-lg border bg-background/50 p-3">
+            <div className="mb-4 rounded-lg border bg-background/50 p-4">
               <div className="flex flex-wrap gap-3">
                 {selectedImages.map((img, index) => (
                   <div key={index} className="relative">
@@ -353,18 +353,18 @@ export default function Chat() {
                 }
               }}
               placeholder="Message Conversational AI..."
-              className="min-h-[60px] w-full resize-none border-0 bg-transparent px-4 py-[1.3rem] pr-20 focus-visible:ring-0 focus-visible:ring-offset-0 sm:text-sm"
+              className="min-h-[60px] w-full resize-none border-0 bg-transparent px-6 py-4 pr-24 focus-visible:ring-0 focus-visible:ring-offset-0 sm:text-sm"
               disabled={isRecording}
             />
             
-            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-              <div className="flex items-center gap-0.5">
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+              <div className="flex items-center gap-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1 px-2 text-xs text-muted-foreground"
+                      className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:bg-muted/50"
                     >
                       {selectedModel}
                       <ChevronDown className="h-3 w-3 opacity-50" />
@@ -391,7 +391,7 @@ export default function Chat() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hover:bg-muted/50"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isRecording}
                   >
@@ -401,7 +401,7 @@ export default function Chat() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hover:bg-muted/50"
                     onClick={() => audioInputRef.current?.click()}
                     disabled={isRecording}
                   >
