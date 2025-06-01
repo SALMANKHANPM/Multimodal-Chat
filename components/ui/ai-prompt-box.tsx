@@ -1,0 +1,1 @@
+{/* Content from the provided ai-prompt-box.tsx */}
