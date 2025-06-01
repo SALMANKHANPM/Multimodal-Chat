@@ -339,7 +339,7 @@ export default function Chat() {
           )}
 
           <div className="relative rounded-xl border bg-background shadow-sm">
-            <Textarea
+            {/* <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => {
@@ -355,36 +355,10 @@ export default function Chat() {
               placeholder="Message Conversational AI..."
               className="min-h-[60px] w-full resize-none border-0 bg-transparent px-6 py-4 pr-24 focus-visible:ring-0 focus-visible:ring-offset-0 sm:text-sm"
               disabled={isRecording}
-            />
+            /> */}
             
             <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:bg-muted/50"
-                    >
-                      {selectedModel}
-                      <ChevronDown className="h-3 w-3 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
-                    {AI_MODELS.map((model) => (
-                      <DropdownMenuItem
-                        key={model}
-                        onClick={() => setSelectedModel(model)}
-                        className="flex items-center justify-between"
-                      >
-                        {model}
-                        {selectedModel === model && (
-                          <Check className="h-4 w-4" />
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
 
                 <div className="flex">
                   <Button
