@@ -23,6 +23,7 @@ import {
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
+import { AI_Prompt } from "@/components/ui/ai-prompt";
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -382,6 +383,13 @@ export default function Chat() {
           </div>
         </div>
       </ScrollArea>
+
+      {/* Seamlessly blended AI Prompt - No borders or background separation */}
+      <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
+        <div className="max-w-3xl mx-auto w-full px-2 py-2">
+          <AI_Prompt />
+        </div>
+      </div>
     </div>
   );
 }
