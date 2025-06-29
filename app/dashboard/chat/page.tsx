@@ -327,8 +327,8 @@ export default function Chat() {
         </div>
       </ScrollArea>
 
-      {/* Enhanced AI Prompt at the bottom - Reduced spacing */}
-      <div className="sticky bottom-0 left-0 right-0 z-10 bg-background border-t mt-auto">
+      {/* Seamlessly blended AI Prompt - No borders or background separation */}
+      <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
         <div className="max-w-3xl mx-auto w-full px-2 py-2">
           <AI_Prompt />
         </div>
