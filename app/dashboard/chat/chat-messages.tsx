@@ -24,12 +24,14 @@ import {
   RiDownloadLine,
   RiFilePdfLine,
   RiFileTextLine,
-  RiExpandDiagonalLine,
   RiZoomInLine,
   RiImageLine,
+  RiVolumeUpLine,
+  RiCloseLine,
 } from "@remixicon/react";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { formatFileSize } from "@/lib/utils";
 
 type MessageMedia = {
   type: "image" | "audio" | "document";
@@ -128,7 +130,7 @@ function MediaRenderer({ media }: MediaRendererProps) {
   if (media.type === "image") {
     return <ImagePreview media={media} />;
   } else if (media.type === "audio") {
-    return <AudioPlayer url={media.url} />;
+    return <AudioPlayer media={media} />;
   } else if (media.type === "document") {
     return <DocumentPreview media={media} />;
   }
@@ -137,15 +139,6 @@ function MediaRenderer({ media }: MediaRendererProps) {
 }
 
 function ImagePreview({ media }: { media: MessageMedia }) {
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '';
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
   return (
     <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
       <div className="flex items-center gap-3">
@@ -183,25 +176,38 @@ function ImagePreview({ media }: { media: MessageMedia }) {
                 </Tooltip>
               </TooltipProvider>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl w-full p-0 bg-transparent border-0 shadow-none">
+            <DialogContent className="max-w-6xl w-[95vw] h-[95vh] p-0 bg-black/95 border-0 shadow-2xl">
               <DialogHeader className="sr-only">
                 <DialogTitle>Image preview</DialogTitle>
               </DialogHeader>
-              <div className="relative w-full max-h-[90vh] bg-black/90 rounded-lg overflow-hidden">
+              <div className="relative w-full h-full flex items-center justify-center">
+                {/* Close button */}
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white border-white/20"
+                  >
+                    <RiCloseLine size={20} />
+                  </Button>
+                </DialogTrigger>
+                
+                {/* Image */}
                 <img
                   src={media.url}
                   alt={media.alt || media.name || "Image preview"}
-                  className="w-full h-full object-contain"
+                  className="max-w-full max-h-full object-contain"
                 />
-                <div className="absolute top-4 right-4">
+                
+                {/* Download button */}
+                <div className="absolute bottom-4 right-4">
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <a
                           href={media.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center h-10 w-10 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background/90 transition-colors border border-border/50"
+                          download={media.name}
+                          className="inline-flex items-center justify-center h-10 w-10 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full transition-colors border border-white/20 text-white"
                         >
                           <RiDownloadLine size={16} />
                           <span className="sr-only">Download image</span>
@@ -221,8 +227,7 @@ function ImagePreview({ media }: { media: MessageMedia }) {
               <TooltipTrigger asChild>
                 <a
                   href={media.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  download={media.name}
                   className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                 >
                   <RiDownloadLine size={18} />
@@ -239,15 +244,6 @@ function ImagePreview({ media }: { media: MessageMedia }) {
 }
 
 function DocumentPreview({ media }: { media: MessageMedia }) {
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '';
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
   const getFileIcon = (fileName?: string) => {
     if (!fileName) return <RiFileTextLine size={24} />;
     
@@ -257,6 +253,8 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
     }
     return <RiFileTextLine size={24} />;
   };
+
+  const isPDF = media.name?.toLowerCase().endsWith('.pdf');
 
   return (
     <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -278,23 +276,64 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
 
         <div className="flex items-center gap-2">
           {/* Preview Button (for PDFs) */}
-          {media.name?.toLowerCase().endsWith('.pdf') && (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={media.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
-                  >
-                    <RiZoomInLine size={18} />
-                    <span className="sr-only">Preview document</span>
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent side="top">Preview document</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          {isPDF && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50">
+                        <RiZoomInLine size={18} />
+                        <span className="sr-only">Preview document</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Preview document</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl w-[95vw] h-[95vh] p-0 bg-background border shadow-2xl">
+                <DialogHeader className="sr-only">
+                  <DialogTitle>PDF preview</DialogTitle>
+                </DialogHeader>
+                <div className="relative w-full h-full flex flex-col">
+                  {/* Header with close and download */}
+                  <div className="flex items-center justify-between p-4 border-b bg-muted/50">
+                    <h3 className="text-lg font-semibold truncate">{media.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={media.url}
+                              download={media.name}
+                              className="inline-flex items-center justify-center h-9 w-9 hover:bg-muted rounded-full transition-colors"
+                            >
+                              <RiDownloadLine size={16} />
+                              <span className="sr-only">Download PDF</span>
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Download PDF</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <RiCloseLine size={20} />
+                        </Button>
+                      </DialogTrigger>
+                    </div>
+                  </div>
+                  
+                  {/* PDF Viewer */}
+                  <div className="flex-1 w-full">
+                    <iframe
+                      src={media.url}
+                      className="w-full h-full border-0"
+                      title={`PDF preview: ${media.name}`}
+                    />
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           )}
 
           {/* Download Button */}
@@ -303,8 +342,7 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
               <TooltipTrigger asChild>
                 <a
                   href={media.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  download={media.name}
                   className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                 >
                   <RiDownloadLine size={18} />
@@ -320,9 +358,8 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
   );
 }
 
-function AudioPlayer({ url }: { url: string }) {
+function AudioPlayer({ media }: { media: MessageMedia }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -330,16 +367,13 @@ function AudioPlayer({ url }: { url: string }) {
     if (audioRef.current) {
       const audio = audioRef.current;
 
-      const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
       const handleDurationChange = () => setDuration(audio.duration);
       const handleEnded = () => setIsPlaying(false);
 
-      audio.addEventListener("timeupdate", handleTimeUpdate);
       audio.addEventListener("durationchange", handleDurationChange);
       audio.addEventListener("ended", handleEnded);
 
       return () => {
-        audio.removeEventListener("timeupdate", handleTimeUpdate);
         audio.removeEventListener("durationchange", handleDurationChange);
         audio.removeEventListener("ended", handleEnded);
       };
@@ -364,56 +398,67 @@ function AudioPlayer({ url }: { url: string }) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(e.target.value);
-    setCurrentTime(newTime);
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-    }
-  };
-
   return (
-    <div className="bg-background rounded-lg p-3 border border-border shadow-sm">
-      <audio ref={audioRef} src={url} className="hidden" />
+    <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
+      <audio ref={audioRef} src={media.url} className="hidden" />
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={togglePlayPause}
-          className="bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition-colors"
-        >
-          {isPlaying ? <RiPauseFill size={20} /> : <RiPlayFill size={20} />}
-        </button>
-
-        <div className="flex-1">
-          <input
-            type="range"
-            min="0"
-            max={duration || 0}
-            value={currentTime}
-            onChange={handleSliderChange}
-            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+        {/* Audio Icon */}
+        <div className="flex-shrink-0">
+          <RiVolumeUpLine size={24} className="text-green-500" />
+        </div>
+        
+        {/* File Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
+            {media.name || 'Audio'}
+          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {media.size && <span>{formatFileSize(media.size)}</span>}
+            {duration > 0 && (
+              <>
+                {media.size && <span>•</span>}
+                <span>{formatTime(duration)}</span>
+              </>
+            )}
           </div>
         </div>
 
-        <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <a
-                href={url}
-                download
-                className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors"
-              >
-                <RiDownloadLine size={18} />
-                <span className="sr-only">Download audio</span>
-              </a>
-            </TooltipTrigger>
-            <TooltipContent side="top">Download audio</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Play/Pause Button */}
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={togglePlayPause}
+                  className="bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition-colors"
+                >
+                  {isPlaying ? <RiPauseFill size={16} /> : <RiPlayFill size={16} />}
+                  <span className="sr-only">{isPlaying ? 'Pause' : 'Play'} audio</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">{isPlaying ? 'Pause' : 'Play'} audio</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Download Button */}
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={media.url}
+                  download={media.name}
+                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                >
+                  <RiDownloadLine size={18} />
+                  <span className="sr-only">Download audio</span>
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="top">Download audio</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
     </div>
   );
