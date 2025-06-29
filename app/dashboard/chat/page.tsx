@@ -326,15 +326,15 @@ export default function Chat() {
   };
 
   return (
-    <div className="sticky top-0 w-full h-full flex flex-col shadow-md md:rounded-s-[inherit] min-[1024px]:rounded-e-3xl bg-background">
-      {/* Header */}
-      <div className="py-5 sticky bg-background top-0 z-10 px-4 md:px-6 lg:px-8 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-black/[0.06] before:via-black/10 before:to-black/[0.06]">
+    <div className="flex flex-col h-screen bg-background">
+      {/* Header - Mobile optimized */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border/50 px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">translations.aiAssistant</h1>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <h1 className="text-lg sm:text-xl font-semibold truncate">AI Assistant</h1>
             {/* API Status Indicator */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               {apiStatus === 'checking' && (
                 <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Checking API status..." />
               )}
@@ -347,49 +347,48 @@ export default function Chat() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center flex-shrink-0">
             {messages.length > 0 ? (
               <Button
                 variant="ghost"
                 onClick={clearChat}
-                className="text-muted-foreground h-10 w-10 p-0"
+                className="text-muted-foreground h-8 w-8 sm:h-10 sm:w-10 p-0"
                 title="Clear chat"
               >
-                <Trash2 className="h-6 w-6" />
+                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="sr-only">Clear</span>
               </Button>
             ) : (
-              <div className="w-10 h-10"></div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
             )}
           </div>
         </div>
       </div>
 
-      {/* API Status Warning */}
+      {/* API Status Warning - Mobile optimized */}
       {apiStatus === 'unavailable' && (
-        <div className="px-4 md:px-6 lg:px-8 py-2">
-          <Alert variant="destructive" className="max-w-3xl mx-auto">
+        <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-2">
+          <Alert variant="destructive" className="text-sm">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Backend API Unavailable</AlertTitle>
-            <AlertDescription>
-              The backend API server is not running or accessible. You can still send messages, but they won't be processed until the server is available at{" "}
-              {process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}.
+            <AlertTitle className="text-sm">Backend API Unavailable</AlertTitle>
+            <AlertDescription className="text-xs sm:text-sm">
+              The backend API server is not running. You can still send messages, but they won't be processed until the server is available.
             </AlertDescription>
           </Alert>
         </div>
       )}
 
-      {/* Alert */}
+      {/* Alert - Mobile optimized */}
       {alert && (
-        <div className="px-4 md:px-6 lg:px-8 py-2">
-          <Alert variant={alert.variant} className="max-w-3xl mx-auto">
-            <AlertTitle>{alert.title}</AlertTitle>
-            <AlertDescription>{alert.description}</AlertDescription>
+        <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-2">
+          <Alert variant={alert.variant} className="text-sm">
+            <AlertTitle className="text-sm">{alert.title}</AlertTitle>
+            <AlertDescription className="text-xs sm:text-sm">{alert.description}</AlertDescription>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setAlert(null)}
-              className="absolute top-2 right-2"
+              className="absolute top-2 right-2 h-6 w-6 p-0"
             >
               ×
             </Button>
@@ -397,18 +396,21 @@ export default function Chat() {
         </div>
       )}
 
-      <ScrollArea>
-        <div className="flex-grow overflow-y-auto px-4 md:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto mt-6 space-y-6 pb-6">
-            {renderChatMessages()}
-            <div ref={messagesEndRef} aria-hidden="true" />
+      {/* Messages Area - Mobile optimized */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4">
+            <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 pb-4">
+              {renderChatMessages()}
+              <div ref={messagesEndRef} aria-hidden="true" />
+            </div>
           </div>
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      </div>
 
-      {/* AI Prompt Component */}
-      <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
-        <div className="max-w-3xl mx-auto w-full px-2 py-2">
+      {/* AI Prompt Component - Mobile optimized */}
+      <div className="sticky bottom-0 left-0 right-0 z-10 bg-background border-t border-border/50">
+        <div className="max-w-4xl mx-auto w-full px-2 sm:px-3 py-2 sm:py-3">
           <AI_Prompt 
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
