@@ -92,12 +92,32 @@ export default function Chat() {
   };
 
   const handleSendMessage = async (messageText: string, files?: UploadedFile[]) => {
+    // Don't send empty messages without files
+    if (!messageText.trim() && (!files || files.length === 0)) return;
+
+    // Prepare media arrays for the message
+    const messageImages: string[] = [];
+    const messageAudio: string[] = [];
+
+    // Process files and create preview URLs
+    if (files && files.length > 0) {
+      files.forEach(file => {
+        if (file.type === 'image' && file.preview) {
+          messageImages.push(file.preview);
+        } else if (file.type === 'audio') {
+          // Create audio URL from the file if not already available
+          const audioUrl = file.audioUrl || URL.createObjectURL(file.file);
+          messageAudio.push(audioUrl);
+        }
+      });
+    }
+
     // Always show the user message immediately, regardless of API status
     const newMessage: Message = {
       role: "user",
       content: messageText,
-      images: files?.filter(f => f.type === 'image' && f.preview).map(f => f.preview!) || undefined,
-      audio: files?.find(f => f.type === 'audio')?.audioUrl || undefined,
+      images: messageImages.length > 0 ? messageImages : undefined,
+      audio: messageAudio.length > 0 ? messageAudio[0] : undefined, // Take first audio file
     };
     setMessages((prev) => [...prev, newMessage]);
 
@@ -122,17 +142,24 @@ export default function Chat() {
       // Handle image files
       const imageFiles = files?.filter(f => f.type === 'image');
       if (imageFiles && imageFiles.length > 0) {
-        const response = await fetch(imageFiles[0].preview!);
-        const blob = await response.blob();
-        const base64Image = await convertBlobToBase64(blob);
-        options.image_data = base64Image;
+        try {
+          // Convert the file directly to base64
+          const base64Image = await convertBlobToBase64(imageFiles[0].file);
+          options.image_data = base64Image;
+        } catch (error) {
+          console.error("Error processing image:", error);
+        }
       }
 
       // Handle audio files
       const audioFiles = files?.filter(f => f.type === 'audio');
       if (audioFiles && audioFiles.length > 0) {
-        const base64Audio = await convertBlobToBase64(audioFiles[0].file);
-        options.audio_data = base64Audio;
+        try {
+          const base64Audio = await convertBlobToBase64(audioFiles[0].file);
+          options.audio_data = base64Audio;
+        } catch (error) {
+          console.error("Error processing audio:", error);
+        }
       }
 
       const result = (await processPrompt(messageText, options)) as ProcessResponse;
@@ -256,32 +283,15 @@ export default function Chat() {
             key={index}
             isUser={message.role === "user"}
             isError={message.role === "error"}
+            media={[
+              ...(message.images?.map(img => ({ type: 'image' as const, url: img })) || []),
+              ...(message.audio ? [{ type: 'audio' as const, url: message.audio }] : [])
+            ]}
           >
             {typeof message.content === "string" ? (
               <p>{message.content}</p>
             ) : (
               message.content
-            )}
-            {message.images && message.images.length > 0 && (
-              <div className="mt-2">
-                {message.images.map((img, imgIndex) => (
-                  <img
-                    key={imgIndex}
-                    src={img}
-                    alt={`Uploaded ${imgIndex + 1}`}
-                    className="max-h-60 rounded-md mt-2 hover:opacity-90 transition-opacity cursor-pointer"
-                  />
-                ))}
-              </div>
-            )}
-            {message.audio && (
-              <div className="mt-2">
-                <audio
-                  controls
-                  src={message.audio}
-                  className="w-full rounded-md bg-background"
-                />
-              </div>
             )}
           </ChatMessage>
         ))}
