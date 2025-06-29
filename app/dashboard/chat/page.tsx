@@ -25,6 +25,14 @@ import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { AI_Prompt } from "@/components/ui/ai-prompt";
 
+interface UploadedFile {
+  id: string;
+  file: File;
+  type: 'audio' | 'document' | 'image' | 'video';
+  preview?: string;
+  audioUrl?: string;
+}
+
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -87,57 +95,67 @@ export default function Chat() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() && selectedImages.length === 0 && !selectedAudio) return;
+  const handleSendMessage = (message: string, files: UploadedFile[]) => {
+    if (!message.trim() && files.length === 0) return;
 
-    // Check if API is available before proceeding
-    if (apiStatus === 'unavailable') {
-      setAlert({
-        title: "API Server Unavailable",
-        description: "The backend API server is not running or accessible. Please ensure the server is started and try again.",
-        variant: "destructive",
-      });
-      return;
+    // Create user message with media
+    const userMessage: Message = {
+      role: "user",
+      content: message,
+      images: files.filter(f => f.type === 'image').map(f => f.preview || ''),
+      audio: files.find(f => f.type === 'audio')?.audioUrl,
+    };
+
+    // Add user message immediately
+    setMessages((prev) => [...prev, userMessage]);
+
+    // If API is available, try to process the message
+    if (apiStatus === 'available') {
+      handleApiRequest(message, files);
+    } else {
+      // Show offline response
+      setTimeout(() => {
+        const offlineMessage: Message = {
+          role: "assistant",
+          content: "I'm currently offline. Your message has been received but I cannot process it right now. Please try again when the connection is restored.",
+        };
+        setMessages((prev) => [...prev, offlineMessage]);
+      }, 1000);
     }
+  };
 
+  const handleApiRequest = async (prompt: string, files: UploadedFile[]) => {
     try {
       setIsLoading(true);
-      const newMessage: Message = {
-        role: "user",
-        content: input,
-        images: selectedImages.length > 0 ? selectedImages : undefined,
-        audio: selectedAudio || undefined,
-      };
-      setMessages((prev) => [...prev, newMessage]);
-      setInput("");
-      setSelectedImages([]);
 
       let options: ProcessOptions = {
         sourceLang,
         targetLang,
       };
 
-      if (selectedImages.length > 0) {
-        const response = await fetch(selectedImages[0]);
-        const blob = await response.blob();
-        const base64Image = await convertBlobToBase64(blob);
-        options.image_data = base64Image;
+      // Handle image files
+      if (files.some(f => f.type === 'image')) {
+        const imageFile = files.find(f => f.type === 'image');
+        if (imageFile) {
+          const base64Image = await convertBlobToBase64(imageFile.file);
+          options.image_data = base64Image;
+        }
       }
 
-      if (selectedAudioBlob) {
-        const base64Audio = await convertBlobToBase64(selectedAudioBlob);
-        options.audio_data = base64Audio;
+      // Handle audio files
+      if (files.some(f => f.type === 'audio')) {
+        const audioFile = files.find(f => f.type === 'audio');
+        if (audioFile) {
+          const base64Audio = await convertBlobToBase64(audioFile.file);
+          options.audio_data = base64Audio;
+        }
       }
 
-      const result = (await processPrompt(input, options)) as ProcessResponse;
+      const result = (await processPrompt(prompt, options)) as ProcessResponse;
 
       if (result.status === "success") {
-        if (selectedAudioBlob) {
-          const transcriptionResponse =
-            result.response as TranscriptionResponse;
-          console.log("=============  Transcription Response  ==========");
-          console.log(transcriptionResponse);
+        if (files.some(f => f.type === 'audio')) {
+          const transcriptionResponse = result.response as TranscriptionResponse;
           const transcriptionMessage: Message = {
             role: "assistant",
             content: (
@@ -211,9 +229,43 @@ export default function Chat() {
       }
     } finally {
       setIsLoading(false);
-      setSelectedAudio(null);
-      setSelectedAudioBlob(null);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() && selectedImages.length === 0 && !selectedAudio) return;
+
+    // Convert current state to files format for consistency
+    const files: UploadedFile[] = [];
+    
+    // Add images
+    selectedImages.forEach((img, index) => {
+      files.push({
+        id: `image-${index}`,
+        file: new File([], `image-${index}.jpg`),
+        type: 'image',
+        preview: img,
+      });
+    });
+
+    // Add audio
+    if (selectedAudio && selectedAudioBlob) {
+      files.push({
+        id: 'audio-0',
+        file: new File([selectedAudioBlob], 'audio.wav'),
+        type: 'audio',
+        audioUrl: selectedAudio,
+      });
+    }
+
+    handleSendMessage(input, files);
+    
+    // Clear form
+    setInput("");
+    setSelectedImages([]);
+    setSelectedAudio(null);
+    setSelectedAudioBlob(null);
   };
 
   const clearChat = () => {
@@ -263,32 +315,15 @@ export default function Chat() {
             key={index}
             isUser={message.role === "user"}
             isError={message.role === "error"}
+            media={[
+              ...(message.images?.map(img => ({ type: 'image' as const, url: img })) || []),
+              ...(message.audio ? [{ type: 'audio' as const, url: message.audio }] : [])
+            ]}
           >
             {typeof message.content === "string" ? (
               <p>{message.content}</p>
             ) : (
               message.content
-            )}
-            {message.images && message.images.length > 0 && (
-              <div className="mt-2">
-                {message.images.map((img, imgIndex) => (
-                  <img
-                    key={imgIndex}
-                    src={img}
-                    alt={`Uploaded ${imgIndex + 1}`}
-                    className="max-h-60 rounded-md mt-2 hover:opacity-90 transition-opacity cursor-pointer"
-                  />
-                ))}
-              </div>
-            )}
-            {message.audio && (
-              <div className="mt-2">
-                <audio
-                  controls
-                  src={message.audio}
-                  className="w-full rounded-md bg-background"
-                />
-              </div>
             )}
           </ChatMessage>
         ))}
@@ -350,8 +385,7 @@ export default function Chat() {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Backend API Unavailable</AlertTitle>
             <AlertDescription>
-              The backend API server is not running or accessible. Please ensure the server is started on{" "}
-              {process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"} and refresh the page.
+              The backend API server is not running or accessible. You can still send messages, but they won't be processed until the server is available.
             </AlertDescription>
           </Alert>
         </div>
@@ -384,10 +418,14 @@ export default function Chat() {
         </div>
       </ScrollArea>
 
-      {/* Seamlessly blended AI Prompt - No borders or background separation */}
+      {/* AI Prompt Component */}
       <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
         <div className="max-w-3xl mx-auto w-full px-2 py-2">
-          <AI_Prompt />
+          <AI_Prompt 
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            disabled={false}
+          />
         </div>
       </div>
     </div>
