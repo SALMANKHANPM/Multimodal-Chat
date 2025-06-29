@@ -9,18 +9,11 @@ import {
   X, 
   Image as ImageIcon, 
   FileText, 
-  Mic,
   Volume2,
   Download
 } from "lucide-react";
 import { cn, formatFileSize } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { VoiceChat } from "@/components/ui/voice-chat";
+import { VoiceRecorderDialog } from "@/components/ui/voice-recorder-dialog";
 
 // File type definitions
 export interface UploadedFile {
@@ -93,8 +86,6 @@ export function AI_Prompt({
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -186,14 +177,6 @@ export function AI_Prompt({
     }
   };
 
-  const handleVoiceRecordingStart = () => {
-    setIsRecording(true);
-  };
-
-  const handleVoiceRecordingStop = (duration: number) => {
-    setIsRecording(false);
-  };
-
   const handleAudioCaptured = (audioBlob: Blob) => {
     // Create a File object from the blob
     const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, {
@@ -209,7 +192,6 @@ export function AI_Prompt({
     };
     
     setFiles(prev => [...prev, uploadedFile]);
-    setIsVoiceDialogOpen(false);
   };
 
   const getFileIcon = (type: UploadedFile['type']) => {
@@ -226,131 +208,108 @@ export function AI_Prompt({
   };
 
   return (
-    <>
-      <div 
-        className={cn(
-          "relative bg-background border border-border rounded-2xl shadow-sm transition-all duration-200",
-          isDragOver && "border-primary bg-primary/5",
-          "focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20"
-        )}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-      >
-        {/* File Previews */}
-        {files.length > 0 && (
-          <div className="p-3 border-b border-border">
-            <div className="flex flex-wrap gap-2">
-              {files.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center gap-2 bg-muted rounded-lg p-2 pr-1 max-w-[200px] group"
-                >
-                  {getFileIcon(file.type)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate" title={file.file.name}>
-                      <span className="sm:hidden">{truncateFilename(file.file.name, 8)}</span>
-                      <span className="hidden sm:inline">{truncateFilename(file.file.name, 15)}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.file.size)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeFile(file.id)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
+    <div 
+      className={cn(
+        "relative bg-background border border-border rounded-2xl shadow-sm transition-all duration-200",
+        isDragOver && "border-primary bg-primary/5",
+        "focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20"
+      )}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
+      {/* File Previews */}
+      {files.length > 0 && (
+        <div className="p-3 border-b border-border">
+          <div className="flex flex-wrap gap-2">
+            {files.map((file) => (
+              <div
+                key={file.id}
+                className="flex items-center gap-2 bg-muted rounded-lg p-2 pr-1 max-w-[200px] group"
+              >
+                {getFileIcon(file.type)}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate" title={file.file.name}>
+                    <span className="sm:hidden">{truncateFilename(file.file.name, 8)}</span>
+                    <span className="hidden sm:inline">{truncateFilename(file.file.name, 15)}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatFileSize(file.file.size)}
+                  </p>
                 </div>
-              ))}
-            </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeFile(file.id)}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
           </div>
-        )}
-
-        {/* Input Area */}
-        <div className="flex items-end gap-2 p-3">
-          {/* Attachment Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 flex-shrink-0"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || files.length >= maxFiles}
-          >
-            <Paperclip className="w-4 h-4" />
-          </Button>
-
-          {/* Voice Recording Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 flex-shrink-0"
-            onClick={() => setIsVoiceDialogOpen(true)}
-            disabled={isLoading}
-          >
-            <Mic className="w-4 h-4" />
-          </Button>
-
-          {/* Text Input */}
-          <Textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={isLoading}
-            className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 shadow-none focus-visible:ring-0 bg-transparent"
-            rows={1}
-          />
-
-          {/* Send Button */}
-          <Button
-            onClick={handleSend}
-            disabled={isLoading || (!message.trim() && files.length === 0)}
-            size="sm"
-            className="h-8 w-8 p-0 flex-shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
         </div>
+      )}
 
-        {/* Hidden File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={acceptedFileTypes.join(',')}
-          onChange={handleFileInputChange}
-          className="hidden"
+      {/* Input Area */}
+      <div className="flex items-end gap-2 p-3">
+        {/* Attachment Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0 flex-shrink-0"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isLoading || files.length >= maxFiles}
+        >
+          <Paperclip className="w-4 h-4" />
+        </Button>
+
+        {/* Voice Recording Button */}
+        <VoiceRecorderDialog
+          onAudioCaptured={handleAudioCaptured}
+          disabled={isLoading}
+          className="h-8 w-8 p-0 flex-shrink-0"
         />
 
-        {/* Drag Overlay */}
-        {isDragOver && (
-          <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex items-center justify-center">
-            <p className="text-primary font-medium">Drop files here</p>
-          </div>
-        )}
+        {/* Text Input */}
+        <Textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={isLoading}
+          className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 shadow-none focus-visible:ring-0 bg-transparent"
+          rows={1}
+        />
+
+        {/* Send Button */}
+        <Button
+          onClick={handleSend}
+          disabled={isLoading || (!message.trim() && files.length === 0)}
+          size="sm"
+          className="h-8 w-8 p-0 flex-shrink-0"
+        >
+          <Send className="w-4 h-4" />
+        </Button>
       </div>
 
-      {/* Voice Recording Dialog */}
-      <Dialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Voice Recording</DialogTitle>
-          </DialogHeader>
-          <VoiceChat
-            onStart={handleVoiceRecordingStart}
-            onStop={handleVoiceRecordingStop}
-            onAudioCaptured={handleAudioCaptured}
-            isRecording={isRecording}
-            onToggleRecording={() => setIsRecording(!isRecording)}
-            className="min-h-[300px]"
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept={acceptedFileTypes.join(',')}
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+
+      {/* Drag Overlay */}
+      {isDragOver && (
+        <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex items-center justify-center">
+          <p className="text-primary font-medium">Drop files here</p>
+        </div>
+      )}
+    </div>
   );
 }
