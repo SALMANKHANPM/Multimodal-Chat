@@ -23,15 +23,7 @@ import {
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
-import { AI_Prompt } from "@/components/ui/ai-prompt";
-
-interface UploadedFile {
-  id: string;
-  file: File;
-  type: 'audio' | 'document' | 'image' | 'video';
-  preview?: string;
-  audioUrl?: string;
-}
+import { AI_PromptEnhanced, type UploadedFile } from "@/components/ui/ai-prompt-enhanced";
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -232,54 +224,12 @@ export default function Chat() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() && selectedImages.length === 0 && !selectedAudio) return;
-
-    // Convert current state to files format for consistency
-    const files: UploadedFile[] = [];
-    
-    // Add images
-    selectedImages.forEach((img, index) => {
-      files.push({
-        id: `image-${index}`,
-        file: new File([], `image-${index}.jpg`),
-        type: 'image',
-        preview: img,
-      });
-    });
-
-    // Add audio
-    if (selectedAudio && selectedAudioBlob) {
-      files.push({
-        id: 'audio-0',
-        file: new File([selectedAudioBlob], 'audio.wav'),
-        type: 'audio',
-        audioUrl: selectedAudio,
-      });
-    }
-
-    handleSendMessage(input, files);
-    
-    // Clear form
-    setInput("");
-    setSelectedImages([]);
-    setSelectedAudio(null);
-    setSelectedAudioBlob(null);
-  };
-
   const clearChat = () => {
     setMessages([]);
     setInput("");
     setSelectedImages([]);
     setSelectedAudio(null);
     setSelectedAudioBlob(null);
-  };
-
-  const handleAudioCaptured = (audioBlob: Blob) => {
-    const audioUrl = URL.createObjectURL(audioBlob);
-    setSelectedAudio(audioUrl);
-    setSelectedAudioBlob(audioBlob);
   };
 
   const renderChatMessages = () => {
@@ -418,10 +368,10 @@ export default function Chat() {
         </div>
       </ScrollArea>
 
-      {/* AI Prompt Component */}
+      {/* Enhanced AI Prompt Component */}
       <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
         <div className="max-w-3xl mx-auto w-full px-2 py-2">
-          <AI_Prompt 
+          <AI_PromptEnhanced 
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
             disabled={false}
