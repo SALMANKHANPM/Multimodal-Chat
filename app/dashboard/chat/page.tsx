@@ -23,7 +23,6 @@ import {
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
-import { EnhancedChatForm } from "./enhanced-chat-form";
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -327,23 +326,6 @@ export default function Chat() {
           </div>
         </div>
       </ScrollArea>
-
-      <EnhancedChatForm
-        input={input}
-        setInput={setInput}
-        selectedImages={selectedImages}
-        setSelectedImages={setSelectedImages}
-        selectedAudio={selectedAudio}
-        setSelectedAudio={setSelectedAudio}
-        selectedAudioBlob={selectedAudioBlob}
-        setSelectedAudioBlob={setSelectedAudioBlob}
-        isLoading={isLoading}
-        isRecording={isRecording}
-        setIsRecording={setIsRecording}
-        sourceLang={sourceLang}
-        onSubmit={handleSubmit}
-        onAudioCaptured={handleAudioCaptured}
-      />
     </div>
   );
 }
