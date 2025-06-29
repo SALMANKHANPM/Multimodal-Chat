@@ -72,7 +72,7 @@ export function EnhancedChatForm({
 
   if (useAdvancedInput) {
     return (
-      <div className="sticky bottom-0 left-0 right-0 z-10 bg-background shadow-sm flex-shrink-0 border-t mt-auto p-4 max-w-3xl mx-auto w-full">
+      <div className="max-w-3xl mx-auto w-full px-4 md:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-medium">Advanced Input Mode</h3>
           <Button
