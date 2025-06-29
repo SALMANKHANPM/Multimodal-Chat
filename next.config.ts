@@ -6,6 +6,7 @@ const nextConfig = {
       "ferf1mheo22r9ira.public.blob.vercel-storage.com",
       "shadcnblocks.com",
       "res.cloudinary.com",
+      "raw.githubusercontent.com"
     ],
   },
 };
