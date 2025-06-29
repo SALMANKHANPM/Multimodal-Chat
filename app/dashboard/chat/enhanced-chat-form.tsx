@@ -2,11 +2,8 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  X,
   SendHorizontal,
-  Paperclip,
   ChevronDown,
   Check,
   Bot,
@@ -125,21 +122,10 @@ const OPENAI_ICON = (
 export function EnhancedChatForm({
   input,
   setInput,
-  selectedImages,
-  setSelectedImages,
-  selectedAudio,
-  setSelectedAudio,
-  selectedAudioBlob,
-  setSelectedAudioBlob,
   isLoading,
   isRecording,
-  setIsRecording,
-  sourceLang,
   onSubmit,
-  onAudioCaptured,
 }: EnhancedChatFormProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 72,
     maxHeight: 300,
@@ -214,26 +200,6 @@ export function EnhancedChatForm({
     "GPT-4-1": OPENAI_ICON,
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newImages = Array.from(files)
-      .slice(0, 1)
-      .map((file) => URL.createObjectURL(file));
-    setSelectedImages(newImages);
-  };
-
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const audioFile = files[0];
-    const audioUrl = URL.createObjectURL(audioFile);
-    setSelectedAudio(audioUrl);
-    setSelectedAudioBlob(audioFile);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey && input.trim()) {
       e.preventDefault();
@@ -252,72 +218,6 @@ export function EnhancedChatForm({
   return (
     <div className="sticky bottom-0 left-0 right-0 z-10 bg-background border-t mt-auto">
       <div className="max-w-3xl mx-auto w-full px-4 md:px-6 lg:px-8 py-4">
-        
-        {/* Show selected media preview */}
-        {(selectedImages.length > 0 || selectedAudio) && (
-          <div className="mb-4 p-3 bg-muted/70 rounded-lg border border-muted">
-            <div className="flex flex-wrap gap-2">
-              {selectedImages.map((img, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={img}
-                    alt={`Preview ${index + 1}`}
-                    className="h-20 w-20 object-cover rounded-md border border-muted shadow-sm"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-90 shadow-sm"
-                    onClick={() => setSelectedImages([])}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-              {selectedAudio && (
-                <div className="flex-1 min-w-[200px]">
-                  <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-muted">
-                    <audio
-                      controls
-                      src={selectedAudio}
-                      className="flex-1 max-w-full"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="h-6 w-6 rounded-full opacity-90 shadow-sm"
-                      onClick={() => {
-                        setSelectedAudio(null);
-                        setSelectedAudioBlob(null);
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Hidden file inputs for media upload */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleImageUpload}
-          accept="image/*"
-          className="hidden"
-        />
-        <input
-          type="file"
-          ref={audioInputRef}
-          onChange={handleAudioUpload}
-          accept="audio/*"
-          className="hidden"
-        />
-
         {/* Enhanced AI Prompt */}
         <div className="w-full">
           <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
@@ -407,23 +307,6 @@ export function EnhancedChatForm({
                           ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <div className="h-4 w-px bg-black/10 dark:bg-white/10 mx-0.5" />
-                      <label
-                        className={cn(
-                          "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
-                          "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                          "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
-                        )}
-                        aria-label="Attach file"
-                      >
-                        <input 
-                          type="file" 
-                          className="hidden" 
-                          onChange={handleImageUpload}
-                          accept="image/*"
-                        />
-                        <Paperclip className="w-4 h-4 transition-colors" />
-                      </label>
                     </div>
                     <button
                       type="button"
