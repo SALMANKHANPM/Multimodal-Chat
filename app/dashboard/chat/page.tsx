@@ -43,6 +43,7 @@ import {
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
+
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +79,16 @@ export default function Chat() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // Auto-dismiss alert after 5 seconds
+  useEffect(() => {
+    if (alert) {
+      const timer = setTimeout(() => {
+        setAlert(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
 
   const convertBlobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -209,6 +220,7 @@ export default function Chat() {
       setSelectedAudioBlob(null);
     }
   };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -264,7 +276,6 @@ export default function Chat() {
             />
             Start a conversation
           </div>
-          {/* <ChatMessage isUser={false}></ChatMessage> */}
         </div>
       );
     }
@@ -353,6 +364,22 @@ export default function Chat() {
           </div>
         </div>
       </div>
+
+      {/* Alert */}
+      {alert && (
+        <div className="px-4 md:px-6 lg:px-8 pb-4">
+          <Alert
+            variant={alert.variant}
+            onDismiss={() => setAlert(null)}
+            className="animate-in fade-in slide-in-from-top-2 max-w-3xl mx-auto"
+          >
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{alert.title}</AlertTitle>
+            <AlertDescription>{alert.description}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <ScrollArea>
         <div className="flex-grow overflow-y-auto px-4 md:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto mt-6 space-y-6 pb-6">
