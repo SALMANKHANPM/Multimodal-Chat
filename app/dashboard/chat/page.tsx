@@ -25,22 +25,26 @@ import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { AI_Prompt } from "@/components/ui/ai-prompt";
 
+// Define the UploadedFile interface to match the AI_Prompt component
+interface UploadedFile {
+  id: string;
+  file: File;
+  type: 'audio' | 'document' | 'image' | 'video';
+  preview?: string;
+  audioUrl?: string;
+}
+
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
-  const [selectedAudioBlob, setSelectedAudioBlob] = useState<Blob | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [alert, setAlert] = useState<{
     title: string;
     description: string;
     variant?: "default" | "destructive";
   } | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const [sourceLang, setSourceLang] = useState<string>("tel");
   const [targetLang, setTargetLang] = useState<string>("eng");
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
@@ -87,10 +91,7 @@ export default function Chat() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() && selectedImages.length === 0 && !selectedAudio) return;
-
+  const handleSendMessage = async (messageText: string, files?: UploadedFile[]) => {
     // Check if API is available before proceeding
     if (apiStatus === 'unavailable') {
       setAlert({
@@ -103,37 +104,41 @@ export default function Chat() {
 
     try {
       setIsLoading(true);
+      
+      // Create user message with text and files
       const newMessage: Message = {
         role: "user",
-        content: input,
-        images: selectedImages.length > 0 ? selectedImages : undefined,
-        audio: selectedAudio || undefined,
+        content: messageText,
+        images: files?.filter(f => f.type === 'image' && f.preview).map(f => f.preview!) || undefined,
+        audio: files?.find(f => f.type === 'audio')?.audioUrl || undefined,
       };
       setMessages((prev) => [...prev, newMessage]);
-      setInput("");
-      setSelectedImages([]);
 
       let options: ProcessOptions = {
         sourceLang,
         targetLang,
       };
 
-      if (selectedImages.length > 0) {
-        const response = await fetch(selectedImages[0]);
+      // Handle image files
+      const imageFiles = files?.filter(f => f.type === 'image');
+      if (imageFiles && imageFiles.length > 0) {
+        const response = await fetch(imageFiles[0].preview!);
         const blob = await response.blob();
         const base64Image = await convertBlobToBase64(blob);
         options.image_data = base64Image;
       }
 
-      if (selectedAudioBlob) {
-        const base64Audio = await convertBlobToBase64(selectedAudioBlob);
+      // Handle audio files
+      const audioFiles = files?.filter(f => f.type === 'audio');
+      if (audioFiles && audioFiles.length > 0) {
+        const base64Audio = await convertBlobToBase64(audioFiles[0].file);
         options.audio_data = base64Audio;
       }
 
-      const result = (await processPrompt(input, options)) as ProcessResponse;
+      const result = (await processPrompt(messageText, options)) as ProcessResponse;
 
       if (result.status === "success") {
-        if (selectedAudioBlob) {
+        if (audioFiles && audioFiles.length > 0) {
           const transcriptionResponse =
             result.response as TranscriptionResponse;
           console.log("=============  Transcription Response  ==========");
@@ -211,23 +216,11 @@ export default function Chat() {
       }
     } finally {
       setIsLoading(false);
-      setSelectedAudio(null);
-      setSelectedAudioBlob(null);
     }
   };
 
   const clearChat = () => {
     setMessages([]);
-    setInput("");
-    setSelectedImages([]);
-    setSelectedAudio(null);
-    setSelectedAudioBlob(null);
-  };
-
-  const handleAudioCaptured = (audioBlob: Blob) => {
-    const audioUrl = URL.createObjectURL(audioBlob);
-    setSelectedAudio(audioUrl);
-    setSelectedAudioBlob(audioBlob);
   };
 
   const renderChatMessages = () => {
@@ -384,10 +377,14 @@ export default function Chat() {
         </div>
       </ScrollArea>
 
-      {/* Seamlessly blended AI Prompt - No borders or background separation */}
+      {/* AI Prompt Component */}
       <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
         <div className="max-w-3xl mx-auto w-full px-2 py-2">
-          <AI_Prompt />
+          <AI_Prompt 
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            disabled={apiStatus === 'unavailable'}
+          />
         </div>
       </div>
     </div>

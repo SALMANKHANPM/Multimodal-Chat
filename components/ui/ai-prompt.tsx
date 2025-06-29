@@ -808,7 +808,13 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
     );
 }
 
-export function AI_Prompt() {
+interface AI_PromptProps {
+    onSendMessage?: (message: string, files?: UploadedFile[]) => void;
+    isLoading?: boolean;
+    disabled?: boolean;
+}
+
+export function AI_Prompt({ onSendMessage, isLoading = false, disabled = false }: AI_PromptProps) {
     const [value, setValue] = useState("");
     const { textareaRef, adjustHeight } = useAutoResizeTextarea({
         minHeight: 72,
@@ -998,19 +1004,30 @@ export function AI_Prompt() {
         handleFileUpload(e.dataTransfer.files);
     };
 
+    const handleSendMessage = () => {
+        if ((!value.trim() && uploadedFiles.length === 0) || disabled || isLoading) return;
+        
+        // Call the parent's onSendMessage function
+        if (onSendMessage) {
+            onSendMessage(value, uploadedFiles);
+        }
+        
+        // Clear the form
+        setValue("");
+        setUploadedFiles([]);
+        setAudioRecordings([]);
+        adjustHeight(true);
+    };
+
         const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey && (value.trim() || uploadedFiles.length > 0)) {
             e.preventDefault();
-            setValue("");
-            setUploadedFiles([]);
-            setAudioRecordings([]);
-            adjustHeight(true);
-            // Here you can add message sending     
+            handleSendMessage();
         }
     };
 
     return (
-        <div className="w-full py-4">
+        <div className="w-full">
             <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
                 <div className="relative">
                     <div className="relative flex flex-col">
@@ -1108,6 +1125,7 @@ export function AI_Prompt() {
                                     setValue(e.target.value);
                                     adjustHeight();
                                 }}
+                                disabled={disabled || isLoading}
                             />
                         </div>
 
@@ -1119,6 +1137,7 @@ export function AI_Prompt() {
                                             <Button
                                                 variant="ghost"
                                                 className="flex items-center gap-1 h-8 pl-1 pr-2 text-xs rounded-md dark:text-white hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
+                                                disabled={disabled || isLoading}
                                             >
                                                 <AnimatePresence mode="wait">
                                                     <motion.div
@@ -1185,7 +1204,8 @@ export function AI_Prompt() {
                                         className={cn(
                                             "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
                                             "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                                            "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                                            "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white",
+                                            (disabled || isLoading) && "opacity-50 cursor-not-allowed"
                                         )}
                                         aria-label="Attach file"
                                     >
@@ -1196,6 +1216,7 @@ export function AI_Prompt() {
                                             multiple
                                             accept="audio/*,video/*,image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx"
                                             onChange={(e) => handleFileUpload(e.target.files)}
+                                            disabled={disabled || isLoading}
                                         />
                                                                                 <Paperclip className="w-4 h-4 transition-colors" />
                                     </label>
@@ -1204,9 +1225,11 @@ export function AI_Prompt() {
                                         className={cn(
                                             "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
                                             "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                                            "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                                            "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white",
+                                            (disabled || isLoading) && "opacity-50 cursor-not-allowed"
                                         )}
                                         aria-label="Record voice message"
+                                        disabled={disabled || isLoading}
                                     >
                                         <Mic className="w-4 h-4 transition-colors" />
                                     </button>
@@ -1215,27 +1238,25 @@ export function AI_Prompt() {
                                     type="button"
                                     className={cn(
                                         "rounded-lg p-2 bg-black/5 dark:bg-white/5",
-                                        "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
+                                        "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
+                                        (disabled || isLoading) && "opacity-50 cursor-not-allowed"
                                     )}
                                     aria-label="Send message"
-                                                                        disabled={!value.trim() && uploadedFiles.length === 0}
-                                                                        onClick={() => {
-                                        if (!value.trim() && uploadedFiles.length === 0) return;
-                                        setValue("");
-                                        setUploadedFiles([]);
-                                        setAudioRecordings([]);
-                                        adjustHeight(true);
-                                        // Here you can add message sending
-                                    }}
+                                                                        disabled={!value.trim() && uploadedFiles.length === 0 || disabled || isLoading}
+                                                                        onClick={handleSendMessage}
                                 >
-                                                                        <ArrowRight
-                                        className={cn(
-                                            "w-4 h-4 dark:text-white transition-opacity duration-200",
-                                            (value.trim() || uploadedFiles.length > 0)
-                                                ? "opacity-100"
-                                                : "opacity-30"
-                                        )}
-                                    />
+                                                                        {isLoading ? (
+                                        <Loader2 className="w-4 h-4 dark:text-white animate-spin" />
+                                    ) : (
+                                        <ArrowRight
+                                            className={cn(
+                                                "w-4 h-4 dark:text-white transition-opacity duration-200",
+                                                (value.trim() || uploadedFiles.length > 0)
+                                                    ? "opacity-100"
+                                                    : "opacity-30"
+                                            )}
+                                        />
+                                    )}
                                 </button>
                             </div>
                         </div>
