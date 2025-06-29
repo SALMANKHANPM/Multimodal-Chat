@@ -46,7 +46,7 @@ export function ChatMessage({
         isUser && "justify-end"
       )}
     >
-      <Image
+      <img
         className={cn(
           "rounded-full",
           isUser ? "order-1" : "border border-black/[0.08] shadow-sm"
