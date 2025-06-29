@@ -1010,7 +1010,7 @@ export function AI_Prompt() {
     };
 
     return (
-        <div className="w-full py-4">
+        <div className="w-full py-2">
             <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
                 <div className="relative">
                     <div className="relative flex flex-col">
@@ -1199,6 +1199,8 @@ export function AI_Prompt() {
                                         />
                                                                                 <Paperclip className="w-4 h-4 transition-colors" />
                                     </label>
+                                    {/* COMMENTED OUT VOICE RECORDER BUTTON */}
+                                    {/*
                                     <button
                                         onClick={() => setIsVoiceRecorderOpen(true)}
                                         className={cn(
@@ -1210,6 +1212,7 @@ export function AI_Prompt() {
                                     >
                                         <Mic className="w-4 h-4 transition-colors" />
                                     </button>
+                                    */}
                                 </div>
                                 <button
                                     type="button"
