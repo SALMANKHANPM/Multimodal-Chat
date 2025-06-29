@@ -53,8 +53,8 @@ export function ChatMessage({
         )}
         src={
           isUser
-            ? "https://res.cloudinary.com/dlzlfasou/image/upload/v1741345634/user-02_mlqqqt.png"
-            : "https://res.cloudinary.com/dlzlfasou/image/upload/v1741345634/user-01_i5l7tp.png"
+            ? "https://raw.githubusercontent.com/origin-space/origin-images/refs/heads/main/exp2/user-02_mlqqqt.png"
+            : "https://raw.githubusercontent.com/origin-space/origin-images/refs/heads/main/exp2/user-01_i5l7tp.png"
         }
         alt={isUser ? "User profile" : "Bart logo"}
         width={40}
