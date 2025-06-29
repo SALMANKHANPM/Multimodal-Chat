@@ -64,12 +64,12 @@ export function EnhancedChatForm({
   };
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-10 bg-background">
-      <div className="max-w-3xl mx-auto w-full px-4 md:px-6 lg:px-8 py-2">
+    <div className="sticky bottom-0 left-0 right-0 z-10 bg-background border-t mt-auto">
+      <div className="max-w-3xl mx-auto w-full px-4 md:px-6 lg:px-8 py-4">
         
         {/* Show selected media preview */}
         {(selectedImages.length > 0 || selectedAudio) && (
-          <div className="mb-3 p-3 bg-muted/70 rounded-lg border border-muted">
+          <div className="mb-4 p-3 bg-muted/70 rounded-lg border border-muted">
             <div className="flex flex-wrap gap-2">
               {selectedImages.map((img, index) => (
                 <div key={index} className="relative group">
