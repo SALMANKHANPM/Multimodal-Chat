@@ -40,20 +40,28 @@ export function AudioRecorder({
   useEffect(() => {
     return () => {
       // Cleanup on unmount
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      cleanup();
     };
   }, []);
+
+  const cleanup = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (isRecording) {
@@ -157,8 +165,15 @@ export function AudioRecorder({
       
       streamRef.current = stream;
       
+      // Check if MediaRecorder is supported
+      if (!MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        console.warn('audio/webm;codecs=opus not supported, falling back to default');
+      }
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=opus",
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+          ? 'audio/webm;codecs=opus' 
+          : undefined,
       });
       
       mediaRecorderRef.current = mediaRecorder;
@@ -166,22 +181,27 @@ export function AudioRecorder({
       setRecordingDuration(0);
 
       mediaRecorder.ondataavailable = (e) => {
+        console.log('Data available:', e.data.size);
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
       };
 
       mediaRecorder.onstop = () => {
+        console.log('MediaRecorder stopped, chunks:', chunksRef.current.length);
         setIsPreparing(true);
-        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-        onAudioCaptured(audioBlob);
         
-        // Cleanup
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-          streamRef.current = null;
+        if (chunksRef.current.length > 0) {
+          const audioBlob = new Blob(chunksRef.current, { 
+            type: mediaRecorder.mimeType || 'audio/webm' 
+          });
+          console.log('Created audio blob:', audioBlob.size, 'bytes');
+          onAudioCaptured(audioBlob);
+        } else {
+          console.error('No audio data recorded');
         }
         
+        // Reset state
         setIsPreparing(false);
         setRecordingDuration(0);
         setVolume(0);
@@ -191,32 +211,52 @@ export function AudioRecorder({
 
       mediaRecorder.onerror = (event) => {
         console.error("MediaRecorder error:", event);
-        stopRecording();
+        handleRecordingError();
+      };
+
+      mediaRecorder.onstart = () => {
+        console.log('MediaRecorder started');
       };
 
       analyzeAudio(stream);
-      mediaRecorder.start(100); // Collect data every 100ms
+      
+      // Start recording with data collection every 100ms
+      mediaRecorder.start(100);
+      
       setIsRecording(true);
       setIsPreparing(false);
       onRecordingStateChange?.(true);
+      
+      console.log('Recording started successfully');
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      setIsPreparing(false);
-      setIsRecording(false);
-      onRecordingStateChange?.(false);
+      handleRecordingError();
       
       // Show user-friendly error
       alert("Unable to access microphone. Please check your permissions and try again.");
     }
   };
 
+  const handleRecordingError = () => {
+    setIsPreparing(false);
+    setIsRecording(false);
+    setRecordingDuration(0);
+    onRecordingStateChange?.(false);
+    cleanup();
+  };
+
   const stopRecording = () => {
+    console.log('Stop recording called, current state:', {
+      isRecording,
+      mediaRecorderState: mediaRecorderRef.current?.state,
+      chunksLength: chunksRef.current.length
+    });
+    
     try {
-      if (mediaRecorderRef.current && isRecording) {
-        // Stop the media recorder
-        if (mediaRecorderRef.current.state === "recording") {
-          mediaRecorderRef.current.stop();
-        }
+      // Stop the media recorder first
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        console.log('Stopping MediaRecorder...');
+        mediaRecorderRef.current.stop();
       }
       
       // Stop animation frame
@@ -225,16 +265,19 @@ export function AudioRecorder({
         animationFrameRef.current = null;
       }
       
-      // Close audio context
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-      
       // Stop all tracks
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current.getTracks().forEach((track) => {
+          console.log('Stopping track:', track.kind);
+          track.stop();
+        });
         streamRef.current = null;
+      }
+      
+      // Close audio context
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
       }
       
       // Clear interval
@@ -243,13 +286,12 @@ export function AudioRecorder({
         intervalRef.current = null;
       }
       
-      // Update state
-      setIsRecording(false);
-      onRecordingStateChange?.(false);
+      console.log('Stop recording completed');
     } catch (error) {
       console.error("Error stopping recording:", error);
       // Force state reset even if there's an error
       setIsRecording(false);
+      setIsPreparing(false);
       onRecordingStateChange?.(false);
     }
   };
@@ -283,7 +325,10 @@ export function AudioRecorder({
         <DialogContent 
           className="sm:max-w-md"
           onPointerDownOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            stopRecording();
+          }}
         >
           <DialogHeader>
             <DialogTitle>Recording Audio ({sourceLang})</DialogTitle>
@@ -311,7 +356,9 @@ export function AudioRecorder({
                 ) : (
                   <Square className="h-4 w-4" />
                 )}
-                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                {isRecording && !isPreparing && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                )}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">
