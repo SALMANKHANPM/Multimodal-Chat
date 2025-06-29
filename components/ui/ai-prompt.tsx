@@ -2,7 +2,7 @@
 
 import { ArrowRight, Bot, Check, ChevronDown, Paperclip, ChevronRight, Circle, X, FileText, Music, Video, Image, Mic, MicOff, Volume2, VolumeX, Loader2, Play, Pause } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { cn, formatFileSize } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 import * as React from "react";
@@ -910,14 +910,6 @@ export function AI_Prompt({ onSendMessage, isLoading = false, disabled = false }
             case 'video': return <Video className="w-4 h-4" />;
             default: return <FileText className="w-4 h-4" />;
         }
-    };
-
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
         const handleFileUpload = (files: FileList | null) => {
