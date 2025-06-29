@@ -15,13 +15,17 @@ import {
   RiPlayFill,
   RiPauseFill,
   RiDownloadLine,
+  RiFilePdfLine,
+  RiFileTextLine,
 } from "@remixicon/react";
 import { useState, useRef, useEffect } from "react";
 
 type MessageMedia = {
-  type: "image" | "audio";
+  type: "image" | "audio" | "document";
   url: string;
   alt?: string;
+  name?: string;
+  size?: number;
 };
 
 type ChatMessageProps = {
@@ -142,9 +146,72 @@ function MediaRenderer({ media }: MediaRendererProps) {
     );
   } else if (media.type === "audio") {
     return <AudioPlayer url={media.url} />;
+  } else if (media.type === "document") {
+    return <DocumentPreview media={media} />;
   }
 
   return null;
+}
+
+function DocumentPreview({ media }: { media: MessageMedia }) {
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileName?: string) => {
+    if (!fileName) return <RiFileTextLine size={24} />;
+    
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    if (extension === 'pdf') {
+      return <RiFilePdfLine size={24} className="text-red-500" />;
+    }
+    return <RiFileTextLine size={24} />;
+  };
+
+  return (
+    <div className="bg-background rounded-lg p-3 border border-border shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0">
+          {getFileIcon(media.name)}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
+            {media.name || 'Document'}
+          </p>
+          {media.size && (
+            <p className="text-xs text-muted-foreground">
+              {formatFileSize(media.size)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={media.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors"
+                >
+                  <RiDownloadLine size={18} />
+                  <span className="sr-only">Download document</span>
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="top">Download document</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AudioPlayer({ url }: { url: string }) {

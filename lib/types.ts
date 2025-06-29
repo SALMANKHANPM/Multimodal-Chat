@@ -1,9 +1,14 @@
 import type { JSX } from "react";
+
 export interface Message {
   role: "assistant" | "user" | "error";
   content: string | JSX.Element;
-  images?: string[];
-  audio?: string;
+  media?: Array<{
+    type: "image" | "audio" | "document";
+    url: string;
+    name?: string;
+    size?: number;
+  }>;
 }
 
 export interface ProcessOptions {

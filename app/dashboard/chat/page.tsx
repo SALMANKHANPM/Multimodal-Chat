@@ -96,18 +96,41 @@ export default function Chat() {
     if (!messageText.trim() && (!files || files.length === 0)) return;
 
     // Prepare media arrays for the message
-    const messageImages: string[] = [];
-    const messageAudio: string[] = [];
+    const messageMedia: Array<{
+      type: "image" | "audio" | "document";
+      url: string;
+      name?: string;
+      size?: number;
+    }> = [];
 
     // Process files and create preview URLs
     if (files && files.length > 0) {
       files.forEach(file => {
         if (file.type === 'image' && file.preview) {
-          messageImages.push(file.preview);
+          messageMedia.push({
+            type: 'image',
+            url: file.preview,
+            name: file.file.name,
+            size: file.file.size
+          });
         } else if (file.type === 'audio') {
           // Create audio URL from the file if not already available
           const audioUrl = file.audioUrl || URL.createObjectURL(file.file);
-          messageAudio.push(audioUrl);
+          messageMedia.push({
+            type: 'audio',
+            url: audioUrl,
+            name: file.file.name,
+            size: file.file.size
+          });
+        } else if (file.type === 'document') {
+          // Create document URL for download
+          const documentUrl = URL.createObjectURL(file.file);
+          messageMedia.push({
+            type: 'document',
+            url: documentUrl,
+            name: file.file.name,
+            size: file.file.size
+          });
         }
       });
     }
@@ -116,8 +139,7 @@ export default function Chat() {
     const newMessage: Message = {
       role: "user",
       content: messageText,
-      images: messageImages.length > 0 ? messageImages : undefined,
-      audio: messageAudio.length > 0 ? messageAudio[0] : undefined, // Take first audio file
+      media: messageMedia.length > 0 ? messageMedia : undefined,
     };
     setMessages((prev) => [...prev, newMessage]);
 
@@ -283,10 +305,7 @@ export default function Chat() {
             key={index}
             isUser={message.role === "user"}
             isError={message.role === "error"}
-            media={[
-              ...(message.images?.map(img => ({ type: 'image' as const, url: img })) || []),
-              ...(message.audio ? [{ type: 'audio' as const, url: message.audio }] : [])
-            ]}
+            media={message.media}
           >
             {typeof message.content === "string" ? (
               <p>{message.content}</p>
