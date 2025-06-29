@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  SendHorizontal,
   ImagePlus,
   Music,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { AI_Prompt } from "@/components/ui/ai-prompt";
 
@@ -48,7 +45,6 @@ export function EnhancedChatForm({
 }: EnhancedChatFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
-  const [useSimpleInput, setUseSimpleInput] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -70,239 +66,109 @@ export function EnhancedChatForm({
     setSelectedAudioBlob(audioFile);
   };
 
-  // Show simple input mode only when explicitly requested
-  if (useSimpleInput) {
-    return (
-      <div className="sticky bottom-0 left-0 right-0 z-10 bg-background shadow-sm flex-shrink-0 border-t mt-auto p-10 md:px-6 lg:px-8 py-4 max-w-3xl mx-auto w-full">
-        <form
-          onSubmit={onSubmit}
-          className="px-4 md:px-6 lg:px-8 py-3 max-w-3xl mx-auto w-full"
-        >
-          {(selectedImages.length > 0 || selectedAudio) && (
-            <div className="mb-3 p-3 bg-muted/70 rounded-lg border border-muted">
-              <div className="flex flex-wrap gap-2">
-                {selectedImages.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={img}
-                      alt={`Preview ${index + 1}`}
-                      className="h-20 w-20 object-cover rounded-md border border-muted shadow-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-90 shadow-sm"
-                      onClick={() => setSelectedImages([])}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                {selectedAudio && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-muted">
-                      <audio
-                        controls
-                        src={selectedAudio}
-                        className="flex-1 max-w-full"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="h-6 w-6 rounded-full opacity-90 shadow-sm"
-                        onClick={() => {
-                          setSelectedAudio(null);
-                          setSelectedAudioBlob(null);
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Input Mode:</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setUseSimpleInput(false)}
-                className="text-xs"
-              >
-                Switch to Advanced
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-2 w-full">
-            <div className="flex items-center">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                className="rounded-l-md rounded-r-none border-r-0"
-                title="Upload Image"
-                disabled={isRecording}
-              >
-                <ImagePlus className="h-5 w-5" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => audioInputRef.current?.click()}
-                className="rounded-none border-x-0"
-                title="Upload Audio"
-                disabled={isRecording}
-              >
-                <Music className="h-5 w-5" />
-              </Button>
-              <div>
-                <AudioRecorder
-                  onAudioCaptured={onAudioCaptured}
-                  onRecordingStateChange={setIsRecording}
-                  sourceLang={sourceLang}
-                />
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              <input
-                type="file"
-                ref={audioInputRef}
-                onChange={handleAudioUpload}
-                accept="audio/*"
-                className="hidden"
-              />
-            </div>
-
-            <div className="flex-1 flex items-center gap-2 w-full">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="flex-1 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
-                disabled={isRecording}
-                placeholder="Type your message..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    onSubmit(e);
-                  }
-                }}
-              />
-
-              <Button
-                type="submit"
-                size="icon"
-                disabled={
-                  isLoading ||
-                  isRecording ||
-                  (!input.trim() && !selectedImages.length && !selectedAudio)
-                }
-                className="bg-primary hover:bg-primary/90 shadow-sm transition-all duration-200 hover:scale-105"
-              >
-                <SendHorizontal className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </form>
-      </div>
-    );
-  }
-
-  // Default to Advanced Input Mode
   return (
-    <div className="max-w-3xl mx-auto w-full px-4 md:px-6 lg:px-8 py-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Advanced Input Mode</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setUseSimpleInput(true)}
-          className="text-xs text-muted-foreground hover:text-foreground"
-        >
-          Switch to Simple
-        </Button>
-      </div>
-      
-      {/* Show selected media preview */}
-      {(selectedImages.length > 0 || selectedAudio) && (
-        <div className="mb-4 p-3 bg-muted/70 rounded-lg border border-muted">
-          <div className="flex flex-wrap gap-2">
-            {selectedImages.map((img, index) => (
-              <div key={index} className="relative group">
-                <img
-                  src={img}
-                  alt={`Preview ${index + 1}`}
-                  className="h-20 w-20 object-cover rounded-md border border-muted shadow-sm"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-90 shadow-sm"
-                  onClick={() => setSelectedImages([])}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-            {selectedAudio && (
-              <div className="flex-1 min-w-[200px]">
-                <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-muted">
-                  <audio
-                    controls
-                    src={selectedAudio}
-                    className="flex-1 max-w-full"
+    <div className="sticky bottom-0 left-0 right-0 z-10 bg-background border-t mt-auto">
+      <div className="max-w-3xl mx-auto w-full px-4 md:px-6 lg:px-8 py-4">
+        
+        {/* Show selected media preview */}
+        {(selectedImages.length > 0 || selectedAudio) && (
+          <div className="mb-4 p-3 bg-muted/70 rounded-lg border border-muted">
+            <div className="flex flex-wrap gap-2">
+              {selectedImages.map((img, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={img}
+                    alt={`Preview ${index + 1}`}
+                    className="h-20 w-20 object-cover rounded-md border border-muted shadow-sm"
                   />
                   <Button
                     type="button"
                     variant="destructive"
                     size="icon"
-                    className="h-6 w-6 rounded-full opacity-90 shadow-sm"
-                    onClick={() => {
-                      setSelectedAudio(null);
-                      setSelectedAudioBlob(null);
-                    }}
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-90 shadow-sm"
+                    onClick={() => setSelectedImages([])}
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
-              </div>
-            )}
+              ))}
+              {selectedAudio && (
+                <div className="flex-1 min-w-[200px]">
+                  <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-muted">
+                    <audio
+                      controls
+                      src={selectedAudio}
+                      className="flex-1 max-w-full"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="h-6 w-6 rounded-full opacity-90 shadow-sm"
+                      onClick={() => {
+                        setSelectedAudio(null);
+                        setSelectedAudioBlob(null);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+        )}
+
+        {/* Media upload controls */}
+        <div className="flex items-center gap-2 mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload Image"
+            disabled={isRecording}
+            className="h-10 w-10"
+          >
+            <ImagePlus className="h-5 w-5" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => audioInputRef.current?.click()}
+            title="Upload Audio"
+            disabled={isRecording}
+            className="h-10 w-10"
+          >
+            <Music className="h-5 w-5" />
+          </Button>
+          <AudioRecorder
+            onAudioCaptured={onAudioCaptured}
+            onRecordingStateChange={setIsRecording}
+            sourceLang={sourceLang}
+          />
         </div>
-      )}
 
-      {/* Hidden file inputs for media upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImageUpload}
-        accept="image/*"
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={audioInputRef}
-        onChange={handleAudioUpload}
-        accept="audio/*"
-        className="hidden"
-      />
+        {/* Hidden file inputs for media upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageUpload}
+          accept="image/*"
+          className="hidden"
+        />
+        <input
+          type="file"
+          ref={audioInputRef}
+          onChange={handleAudioUpload}
+          accept="audio/*"
+          className="hidden"
+        />
 
-      <AI_Prompt />
+        {/* Advanced AI Prompt Component */}
+        <AI_Prompt />
+      </div>
     </div>
   );
 }
