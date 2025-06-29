@@ -383,7 +383,7 @@ export default function Chat() {
           <AI_Prompt 
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
-            disabled={apiStatus === 'unavailable'}
+            //disabled={apiStatus === 'unavailable'}
           />
         </div>
       </div>
