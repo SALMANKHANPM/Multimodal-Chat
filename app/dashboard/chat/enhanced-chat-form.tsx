@@ -3,11 +3,8 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  ImagePlus,
-  Music,
   X,
 } from "lucide-react";
-import { AudioRecorder } from "@/components/AudioRecorder";
 import { AI_Prompt } from "@/components/ui/ai-prompt";
 
 interface EnhancedChatFormProps {
@@ -118,37 +115,6 @@ export function EnhancedChatForm({
             </div>
           </div>
         )}
-
-        {/* Media upload controls */}
-        <div className="flex items-center gap-2 mb-4">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            title="Upload Image"
-            disabled={isRecording}
-            className="h-10 w-10"
-          >
-            <ImagePlus className="h-5 w-5" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => audioInputRef.current?.click()}
-            title="Upload Audio"
-            disabled={isRecording}
-            className="h-10 w-10"
-          >
-            <Music className="h-5 w-5" />
-          </Button>
-          <AudioRecorder
-            onAudioCaptured={onAudioCaptured}
-            onRecordingStateChange={setIsRecording}
-            sourceLang={sourceLang}
-          />
-        </div>
 
         {/* Hidden file inputs for media upload */}
         <input
