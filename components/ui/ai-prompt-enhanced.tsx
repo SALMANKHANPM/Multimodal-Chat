@@ -75,7 +75,7 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-interface UploadedFile {
+export interface UploadedFile {
   id: string;
   file: File;
   type: 'audio' | 'document' | 'image' | 'video';
@@ -136,23 +136,23 @@ function AudioPreview({ file, isRecording, onRemove }: AudioPreviewProps) {
       <audio ref={audioRef} src={file.audioUrl} preload="metadata" />
       
       <div className="flex items-center gap-2 w-full">
-        <div className="w-8 h-8 rounded bg-black/10 dark:bg-white/10 flex items-center justify-center">
+        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
           <Music className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-black/50 dark:text-white/50">
+          <p className="text-xs text-muted-foreground">
             {formatFileSize(file.file.size)}
           </p>
         </div>
         <button
           onClick={togglePlayPause}
-          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+          className="p-1.5 hover:bg-muted rounded transition-colors"
           aria-label={isPlaying ? "Stop" : "Play"}
         >
           {isPlaying ? (
-            <Pause className="w-4 h-4 text-black/70 dark:text-white/70" />
+            <Pause className="w-4 h-4 text-muted-foreground" />
           ) : (
-            <Play className="w-4 h-4 text-black/70 dark:text-white/70" />
+            <Play className="w-4 h-4 text-muted-foreground" />
           )}
         </button>
         <button
@@ -335,33 +335,17 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
       onClick={onClose}
     >
       <motion.div
-        className="bg-black/90 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full mx-4 relative overflow-hidden"
+        className="bg-background border rounded-2xl p-8 max-w-md w-full mx-4 relative overflow-hidden shadow-lg"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute top-1/2 left-1/2 w-96 h-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 blur-3xl"
-            animate={{
-              scale: isRecording ? [1, 1.2, 1] : [1, 1.1, 1],
-              opacity: isRecording ? [0.3, 0.6, 0.3] : [0.1, 0.2, 0.1]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-        </div>
-
         <div className="relative z-10 flex flex-col items-center space-y-6">
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute -top-2 -right-2 p-2 text-white/60 hover:text-white transition-colors"
+            className="absolute -top-2 -right-2 p-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -373,22 +357,13 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
               disabled={isProcessing}
               className={cn(
                 "relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300",
-                "bg-gradient-to-br from-white/20 to-white/10 border-2",
+                "bg-primary text-primary-foreground border-2",
                 isRecording ? "border-red-500 shadow-lg shadow-red-500/25" :
                 isProcessing ? "border-yellow-500 shadow-lg shadow-yellow-500/25" :
-                "border-white/20 hover:border-white/40"
+                "border-primary hover:border-primary/80"
               )}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              animate={{
-                boxShadow: isRecording 
-                  ? ["0 0 0 0 rgba(239, 68, 68, 0.4)", "0 0 0 20px rgba(239, 68, 68, 0)"]
-                  : undefined
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: isRecording ? Infinity : 0
-              }}
             >
               <AnimatePresence mode="wait">
                 {isProcessing ? (
@@ -398,7 +373,7 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                   >
-                    <Loader2 className="w-8 h-8 text-yellow-400 animate-spin" />
+                    <Loader2 className="w-8 h-8 animate-spin" />
                   </motion.div>
                 ) : isRecording ? (
                   <motion.div
@@ -416,40 +391,11 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                   >
-                    <Mic className="w-8 h-8 text-white" />
+                    <Mic className="w-8 h-8" />
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.button>
-
-            {/* Pulse rings */}
-            <AnimatePresence>
-              {isRecording && (
-                <>
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-red-500/30"
-                    initial={{ scale: 1, opacity: 0.6 }}
-                    animate={{ scale: 1.5, opacity: 0 }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeOut"
-                    }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-red-500/20"
-                    initial={{ scale: 1, opacity: 0.4 }}
-                    animate={{ scale: 2, opacity: 0 }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeOut",
-                      delay: 0.5
-                    }}
-                  />
-                </>
-              )}
-            </AnimatePresence>
           </motion.div>
 
           {/* Waveform visualizer */}
@@ -461,7 +407,7 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
                   "w-1 rounded-full transition-colors duration-300",
                   isRecording ? "bg-red-500" :
                   isProcessing ? "bg-yellow-500" :
-                  "bg-white/30"
+                  "bg-muted"
                 )}
                 animate={{
                   height: `${Math.max(4, height * 0.4)}px`,
@@ -480,43 +426,20 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
             <motion.p
               className={cn(
                 "text-lg font-medium transition-colors",
-                isRecording ? "text-red-400" :
-                isProcessing ? "text-yellow-400" :
-                "text-white/70"
+                isRecording ? "text-red-500" :
+                isProcessing ? "text-yellow-500" :
+                "text-foreground"
               )}
-              animate={{ opacity: [1, 0.7, 1] }}
-              transition={{
-                duration: 2,
-                repeat: isRecording || isProcessing ? Infinity : 0
-              }}
             >
               {getStatusText()}
             </motion.p>
             
-            <p className="text-sm text-white/50 font-mono">
+            <p className="text-sm text-muted-foreground font-mono">
               {formatTime(duration)}
             </p>
-
-            {volume > 0 && (
-              <motion.div
-                className="flex items-center justify-center space-x-2"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <VolumeX className="w-4 h-4 text-white/50" />
-                <div className="w-24 h-2 bg-white/20 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-red-500 rounded-full"
-                    animate={{ width: `${volume}%` }}
-                    transition={{ duration: 0.1 }}
-                  />
-                </div>
-                <Volume2 className="w-4 h-4 text-white/50" />
-              </motion.div>
-            )}
           </div>
 
-          <p className="text-xs text-white/40 text-center">
+          <p className="text-xs text-muted-foreground text-center">
             {isRecording ? "Tap the button to stop recording" : "Tap the microphone to start recording"}
           </p>
         </div>
@@ -534,8 +457,8 @@ interface AI_PromptEnhancedProps {
 export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled = false }: AI_PromptEnhancedProps) {
   const [value, setValue] = useState("");
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 72,
-    maxHeight: 300,
+    minHeight: 56,
+    maxHeight: 200,
   });
   const [selectedModel, setSelectedModel] = useState("GPT-4-1 Mini");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -545,15 +468,13 @@ export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled =
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const AI_MODELS = [
-    "o3-mini",
-    "Gemini 2.5 Flash",
-    "Claude 3.5 Sonnet",
     "GPT-4-1 Mini",
+    "Claude 3.5 Sonnet",
+    "Gemini 2.5 Flash",
     "GPT-4o",
     "Claude 3.5 Haiku",
     "Gemini 1.5 Pro",
     "Llama 3.3 70B",
-    "Qwen 2.5 Coder 32B",
     "DeepSeek V3",
   ];
 
@@ -676,13 +597,13 @@ export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled =
   };
 
   return (
-    <div className="w-full py-4">
+    <div className="w-full max-w-4xl mx-auto px-4">
       <form onSubmit={handleSubmit} className="relative">
         <div
           className={cn(
-            "relative overflow-hidden rounded-2xl border bg-background transition-all duration-200",
+            "relative overflow-hidden rounded-2xl border bg-background transition-all duration-200 shadow-sm",
             isDragOver ? "border-primary bg-primary/5" : "border-border",
-            "focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
+            "focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20"
           )}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -730,7 +651,7 @@ export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled =
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 p-2 rounded-lg bg-muted border relative">
-                          <div className="w-8 h-8 rounded bg-black/10 dark:bg-white/10 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded bg-muted-foreground/10 flex items-center justify-center">
                             {getFileIcon(file.type)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -756,29 +677,29 @@ export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled =
           </AnimatePresence>
 
           {/* Input area */}
-          <div className="flex items-end gap-2 p-3">
+          <div className="flex items-end gap-3 p-4">
             {/* Model selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground shrink-0"
+                  className="h-9 px-3 text-sm font-medium text-muted-foreground hover:text-foreground shrink-0 border border-border"
                   disabled={disabled}
                 >
                   {selectedModel}
-                  <ChevronDown className="w-3 h-3 ml-1" />
+                  <ChevronDown className="w-4 h-4 ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuContent align="start" className="w-56">
                 {AI_MODELS.map((model) => (
                   <DropdownMenuItem
                     key={model}
                     onClick={() => setSelectedModel(model)}
                     className="text-sm"
                   >
-                    <div className="flex items-center gap-2">
-                      {model === selectedModel && <Check className="w-4 h-4" />}
+                    <div className="flex items-center gap-2 w-full">
+                      {model === selectedModel && <Check className="w-4 h-4 text-primary" />}
                       <span className={model === selectedModel ? "font-medium" : ""}>
                         {model}
                       </span>
@@ -796,23 +717,24 @@ export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled =
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Message AI..."
-                className="min-h-[72px] resize-none border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent p-0 text-base focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
                 disabled={disabled}
               />
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               {/* File upload */}
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9 hover:bg-muted"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled}
+                title="Attach files"
               >
-                <Paperclip className="w-4 h-4" />
+                <Paperclip className="w-5 h-5" />
               </Button>
 
               {/* Voice recorder */}
@@ -820,24 +742,26 @@ export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled =
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9 hover:bg-muted"
                 onClick={() => setIsVoiceRecorderOpen(true)}
                 disabled={disabled}
+                title="Record voice message"
               >
-                <Mic className="w-4 h-4" />
+                <Mic className="w-5 h-5" />
               </Button>
 
               {/* Send button */}
               <Button
                 type="submit"
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9"
                 disabled={disabled || isLoading || (!value.trim() && uploadedFiles.length === 0)}
+                title="Send message"
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-5 h-5" />
                 )}
               </Button>
             </div>
@@ -887,4 +811,4 @@ export function AI_PromptEnhanced({ onSendMessage, isLoading = false, disabled =
 }
 
 // Export types for use in other components
-export type { UploadedFile, AudioRecording };
+export type { AudioRecording };
