@@ -26,6 +26,7 @@ import {
   RiFileTextLine,
   RiExpandDiagonalLine,
   RiZoomInLine,
+  RiImageLine,
 } from "@remixicon/react";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -136,9 +137,6 @@ function MediaRenderer({ media }: MediaRendererProps) {
 }
 
 function ImagePreview({ media }: { media: MessageMedia }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '';
     if (bytes === 0) return '0 Bytes';
@@ -149,120 +147,93 @@ function ImagePreview({ media }: { media: MessageMedia }) {
   };
 
   return (
-    <div className="group relative">
-      {/* Image Container */}
-      <div className="relative rounded-xl overflow-hidden bg-muted/30 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
-        <div className="relative aspect-video max-h-80 bg-gradient-to-br from-muted/50 to-muted/80">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-            </div>
-          )}
-          
-          {hasError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-              <RiArticleLine size={32} className="mb-2" />
-              <span className="text-sm">Failed to load image</span>
-            </div>
-          ) : (
-            <img
-              src={media.url}
-              alt={media.alt || media.name || "Shared image"}
-              className={cn(
-                "w-full h-full object-cover transition-all duration-300",
-                "group-hover:scale-[1.02]",
-                isLoading ? "opacity-0" : "opacity-100"
-              )}
-              onLoad={() => setIsLoading(false)}
-              onError={() => {
-                setIsLoading(false);
-                setHasError(true);
-              }}
-            />
+    <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-center gap-3">
+        {/* Image Icon */}
+        <div className="flex-shrink-0">
+          <RiImageLine size={24} className="text-blue-500" />
+        </div>
+        
+        {/* File Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
+            {media.name || 'Image'}
+          </p>
+          {media.size && (
+            <p className="text-xs text-muted-foreground">
+              {formatFileSize(media.size)}
+            </p>
           )}
         </div>
 
-        {/* Overlay with actions */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200">
-          <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            {/* Zoom/View Full Size */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background/90 border border-border/50"
-                >
-                  <RiExpandDiagonalLine size={14} />
-                  <span className="sr-only">View full size</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl w-full p-0 bg-transparent border-0 shadow-none">
-                <DialogHeader className="sr-only">
-                  <DialogTitle>Full size image</DialogTitle>
-                </DialogHeader>
-                <div className="relative w-full max-h-[90vh] bg-black/90 rounded-lg overflow-hidden">
-                  <img
-                    src={media.url}
-                    alt={media.alt || media.name || "Full size image"}
-                    className="w-full h-full object-contain"
-                  />
-                  <div className="absolute top-4 right-4">
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={media.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center h-10 w-10 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background/90 transition-colors border border-border/50"
-                          >
-                            <RiDownloadLine size={16} />
-                            <span className="sr-only">Download image</span>
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent side="left">Download image</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Preview Button */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50">
+                      <RiZoomInLine size={18} />
+                      <span className="sr-only">Preview image</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Preview image</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl w-full p-0 bg-transparent border-0 shadow-none">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Image preview</DialogTitle>
+              </DialogHeader>
+              <div className="relative w-full max-h-[90vh] bg-black/90 rounded-lg overflow-hidden">
+                <img
+                  src={media.url}
+                  alt={media.alt || media.name || "Image preview"}
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute top-4 right-4">
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={media.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center h-10 w-10 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background/90 transition-colors border border-border/50"
+                        >
+                          <RiDownloadLine size={16} />
+                          <span className="sr-only">Download image</span>
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">Download image</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-            {/* Download */}
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={media.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center h-8 w-8 bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors border border-border/50"
-                  >
-                    <RiDownloadLine size={14} />
-                    <span className="sr-only">Download image</span>
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent side="left">Download image</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+          {/* Download Button */}
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={media.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                >
+                  <RiDownloadLine size={18} />
+                  <span className="sr-only">Download image</span>
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="top">Download image</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
-
-      {/* Image Info */}
-      {(media.name || media.size) && (
-        <div className="mt-2 px-1">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            {media.name && (
-              <span className="truncate font-medium">{media.name}</span>
-            )}
-            {media.size && (
-              <span className="ml-2 flex-shrink-0">{formatFileSize(media.size)}</span>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -306,6 +277,27 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Preview Button (for PDFs) */}
+          {media.name?.toLowerCase().endsWith('.pdf') && (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={media.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                  >
+                    <RiZoomInLine size={18} />
+                    <span className="sr-only">Preview document</span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent side="top">Preview document</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Download Button */}
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
