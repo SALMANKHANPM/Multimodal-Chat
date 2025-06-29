@@ -3,22 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import {
-  SendHorizontal,
-  ImagePlus,
-  Bot,
-  User,
-  AlertCircle,
-  Music,
-  Trash2,
-  HelpCircle,
   Sparkles,
-  PanelLeftClose,
-  PanelLeftOpen,
-  ChevronRight,
-  X,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateText, processPrompt } from "@/lib/api";
@@ -30,39 +18,28 @@ import {
   TranscriptionResponse,
 } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AudioRecorder } from "@/components/AudioRecorder";
-import { ChatHistory } from "@/components/ChatHistory";
 import {
-  RiCodeSSlashLine,
-  RiShareLine,
-  RiShareCircleLine,
   RiShining2Line,
-  RiAttachment2,
-  RiMicLine,
-  RiLeafLine,
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
+import { EnhancedChatForm } from "./enhanced-chat-form";
+
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
   const [selectedAudioBlob, setSelectedAudioBlob] = useState<Blob | null>(null);
-  const [isPreparing, setIsPreparing] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [alert, setAlert] = useState<{
     title: string;
     description: string;
     variant?: "default" | "destructive";
   } | null>(null);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [sourceLang, setSourceLang] = useState<string>("tel");
   const [targetLang, setTargetLang] = useState<string>("eng");
@@ -128,7 +105,6 @@ export default function Chat() {
 
       if (result.status === "success") {
         if (selectedAudioBlob) {
-          // Add transcription message
           const transcriptionResponse =
             result.response as TranscriptionResponse;
           console.log("=============  Transcription Response  ==========");
@@ -209,33 +185,6 @@ export default function Chat() {
       setSelectedAudioBlob(null);
     }
   };
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    if (files.length > 1) {
-      setAlert({
-        title: "Warning",
-        description: "Only the first image will be processed by the AI.",
-        variant: "default",
-      });
-    }
-
-    const newImages = Array.from(files)
-      .slice(0, 1)
-      .map((file) => URL.createObjectURL(file));
-    setSelectedImages(newImages);
-  };
-
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const audioFile = files[0];
-    const audioUrl = URL.createObjectURL(audioFile);
-    setSelectedAudio(audioUrl);
-    setSelectedAudioBlob(audioFile);
-  };
 
   const clearChat = () => {
     setMessages([]);
@@ -251,7 +200,6 @@ export default function Chat() {
     setSelectedAudioBlob(audioBlob);
   };
 
-  // Render chat messages dynamically based on the messages state
   const renderChatMessages = () => {
     if (messages.length === 0) {
       return (
@@ -264,7 +212,6 @@ export default function Chat() {
             />
             Start a conversation
           </div>
-          {/* <ChatMessage isUser={false}></ChatMessage> */}
         </div>
       );
     }
@@ -353,6 +300,25 @@ export default function Chat() {
           </div>
         </div>
       </div>
+
+      {/* Alert */}
+      {alert && (
+        <div className="px-4 md:px-6 lg:px-8 py-2">
+          <Alert variant={alert.variant} className="max-w-3xl mx-auto">
+            <AlertTitle>{alert.title}</AlertTitle>
+            <AlertDescription>{alert.description}</AlertDescription>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAlert(null)}
+              className="absolute top-2 right-2"
+            >
+              ×
+            </Button>
+          </Alert>
+        </div>
+      )}
+
       <ScrollArea>
         <div className="flex-grow overflow-y-auto px-4 md:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto mt-6 space-y-6 pb-6">
@@ -362,140 +328,22 @@ export default function Chat() {
         </div>
       </ScrollArea>
 
-      <div
-        className="sticky bottom-0 left-0 right-0 z-10 bg-background shadow-sm flex-shrink-0 border-t mt-auto p-10
-        md:px-6 lg:px-8 py-4 max-w-3xl mx-auto w-full"
-      >
-        <form
-          onSubmit={handleSubmit}
-          className="px-4 md:px-6 lg:px-8 py-3 max-w-3xl mx-auto w-full"
-        >
-          {(selectedImages.length > 0 || selectedAudio) && (
-            <div className="mb-3 p-3 bg-muted/70 rounded-lg border border-muted">
-              <div className="flex flex-wrap gap-2">
-                {selectedImages.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={img}
-                      alt={`Preview ${index + 1}`}
-                      className="h-20 w-20 object-cover rounded-md border border-muted shadow-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-90 shadow-sm"
-                      onClick={() => setSelectedImages([])}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                {selectedAudio && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-muted">
-                      <audio
-                        controls
-                        src={selectedAudio}
-                        className="flex-1 max-w-full"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -le h-6 w-6 rounded-full opacity-90 shadow-sm"
-                        onClick={() => {
-                          setSelectedAudio(null);
-                          setSelectedAudioBlob(null);
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          {/* Footer */}
-          <div className="flex flex-col sm:flex-row gap-2 w-full">
-            <div className="flex items-center">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                className="rounded-l-md rounded-r-none border-r-0"
-                title="Upload Image"
-                disabled={isRecording}
-              >
-                <ImagePlus className="h-5 w-5" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => audioInputRef.current?.click()}
-                className="rounded-none border-x-0 "
-                title="Upload Audio"
-                disabled={isRecording}
-              >
-                <Music className="h-5 w-5" />
-              </Button>
-              <div>
-                <AudioRecorder
-                  onAudioCaptured={handleAudioCaptured}
-                  onRecordingStateChange={setIsRecording}
-                  sourceLang={sourceLang}
-                />
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              <input
-                type="file"
-                ref={audioInputRef}
-                onChange={handleAudioUpload}
-                accept="audio/*"
-                className="hidden"
-              />
-            </div>
-
-            <div className="flex-1 flex items-center gap-2 w-full">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="flex-1 shadow-sm"
-                disabled={isRecording}
-                placeholder="Type your message..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-              />
-
-              <Button
-                type="submit"
-                size="icon"
-                disabled={
-                  isLoading ||
-                  isRecording ||
-                  (!input.trim() && !selectedImages.length && !selectedAudio)
-                }
-                className="bg-primary hover:bg-primary/90 shadow-sm"
-              >
-                <SendHorizontal className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </form>
-      </div>
+      <EnhancedChatForm
+        input={input}
+        setInput={setInput}
+        selectedImages={selectedImages}
+        setSelectedImages={setSelectedImages}
+        selectedAudio={selectedAudio}
+        setSelectedAudio={setSelectedAudio}
+        selectedAudioBlob={selectedAudioBlob}
+        setSelectedAudioBlob={setSelectedAudioBlob}
+        isLoading={isLoading}
+        isRecording={isRecording}
+        setIsRecording={setIsRecording}
+        sourceLang={sourceLang}
+        onSubmit={handleSubmit}
+        onAudioCaptured={handleAudioCaptured}
+      />
     </div>
   );
 }
