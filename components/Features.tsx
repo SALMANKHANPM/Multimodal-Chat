@@ -1,99 +1,98 @@
-interface Feature {
-  title: string;
-  description: string;
-  image: string;
-}
+import { MessageSquare, Mic, BookOpen, Brain, Zap, Globe } from "lucide-react";
 
-interface FeatureProps {
-  heading: string;
-  description?: string;
-  feature1: Feature;
-  feature2: Feature;
-  feature3: Feature;
-  feature4: Feature;
-}
+const Features = () => {
+  const features = [
+    {
+      icon: MessageSquare,
+      title: "Interactive Conversations",
+      description: "Practice real conversations with our AI tutor that adapts to your learning pace and provides instant feedback.",
+      gradient: "from-blue-500 to-cyan-500"
+    },
+    {
+      icon: Mic,
+      title: "Voice Recognition",
+      description: "Perfect your pronunciation with advanced speech recognition technology that helps you sound like a native speaker.",
+      gradient: "from-purple-500 to-pink-500"
+    },
+    {
+      icon: BookOpen,
+      title: "Personalized Learning",
+      description: "Get customized lessons based on your skill level, learning style, and progress to maximize your learning efficiency.",
+      gradient: "from-green-500 to-emerald-500"
+    },
+    {
+      icon: Brain,
+      title: "AI-Powered Insights",
+      description: "Receive intelligent feedback and suggestions to improve your language skills faster with data-driven insights.",
+      gradient: "from-orange-500 to-red-500"
+    },
+    {
+      icon: Zap,
+      title: "Instant Translation",
+      description: "Seamlessly translate between Telugu and English with context-aware translations that preserve meaning.",
+      gradient: "from-indigo-500 to-purple-500"
+    },
+    {
+      icon: Globe,
+      title: "Cultural Context",
+      description: "Learn not just the language but also cultural nuances and expressions for authentic communication.",
+      gradient: "from-teal-500 to-blue-500"
+    }
+  ];
 
-const Features = ({
-  heading = "Learn to Read, Speak and Write ..",
-  description = "Our Features",
-  feature1 = {
-    title: "UI/UX Design",
-    description:
-      "Creating intuitive user experiences with modern interface design principles and user-centered methodologies.",
-    image: "https://shadcnblocks.com/images/block/placeholder-1.svg",
-  },
-  feature2 = {
-    title: "Responsive Development",
-    description:
-      "Building websites that look and function perfectly across all devices and screen sizes.",
-    image: "https://shadcnblocks.com/images/block/placeholder-2.svg",
-  },
-  feature3 = {
-    title: "Brand Integration",
-    description:
-      "Seamlessly incorporating your brand identity into every aspect of your website's design.",
-    image: "https://shadcnblocks.com/images/block/placeholder-1.svg",
-  },
-  feature4 = {
-    title: "Performance Optimization",
-    description:
-      "Ensuring fast loading times and smooth performance through optimized code and assets.",
-    image: "https://shadcnblocks.com/images/block/placeholder-2.svg",
-  },
-}) => {
   return (
-    <section className="p-5 flex flex-col items-center bg-whitesmoke">
-      <div className="container">
-        <div className="mb-24 gap-6">
-          <p className="font-medium text-muted-foreground md:max-w-4xl lg:text-xl">
-            {description}
+    <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 bg-white/80 backdrop-blur-sm border border-blue-200/50 rounded-full">
+            <Brain className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-900">Powerful Features</span>
+          </div>
+          <h2 className="text-4xl font-bold text-gray-900 lg:text-5xl mb-6">
+            Everything You Need to{" "}
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Master Languages
+            </span>
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Our AI-powered platform combines cutting-edge technology with proven learning methodologies 
+            to help you achieve fluency faster than traditional methods.
           </p>
-          <h1 className="text-4xl font-semibold lg:max-w-3xl lg:text-6xl lg:text-nowrap">
-            {heading}
-          </h1>
         </div>
-        <div className="relative flex justify-center">
-          <div className="border-muted2 relative flex w-full flex-col border md:w-1/2 lg:w-full">
-            <div className="relative flex flex-col lg:flex-row">
-              <div className="border-muted2 flex flex-col justify-between border-b border-solid p-10 lg:w-3/5 lg:border-r lg:border-b-0">
-                <h2 className="text-xl font-semibold">{feature1.title}</h2>
-                <p className="text-muted-foreground">{feature1.description}</p>
-                <img
-                  src={feature1.image}
-                  alt={feature1.title}
-                  className="mt-8 aspect-[1.5] h-full w-full object-cover lg:aspect-[2.4]"
-                />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <div 
+              key={index} 
+              className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100"
+            >
+              {/* Gradient Background */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`} />
+              
+              {/* Icon */}
+              <div className={`inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-xl mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <feature.icon className="w-7 h-7 text-white" />
               </div>
-              <div className="flex flex-col justify-between p-10 lg:w-2/5">
-                <h2 className="text-xl font-semibold">{feature2.title}</h2>
-                <p className="text-muted-foreground">{feature2.description}</p>
-                <img
-                  src={feature2.image}
-                  alt={feature2.title}
-                  className="mt-8 aspect-[1.45] h-full w-full object-cover"
-                />
-              </div>
+
+              {/* Content */}
+              <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-gray-800">
+                {feature.title}
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                {feature.description}
+              </p>
+
+              {/* Hover Effect Border */}
+              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 -z-10`} />
             </div>
-            <div className="border-muted2 relative flex flex-col border-t border-solid lg:flex-row">
-              <div className="border-muted2 flex flex-col justify-between border-b border-solid p-10 lg:w-2/5 lg:border-r lg:border-b-0">
-                <h2 className="text-xl font-semibold">{feature3.title}</h2>
-                <p className="text-muted-foreground">{feature3.description}</p>
-                <img
-                  src={feature3.image}
-                  alt={feature3.title}
-                  className="mt-8 aspect-[1.45] h-full w-full object-cover"
-                />
-              </div>
-              <div className="flex flex-col justify-between p-10 lg:w-3/5">
-                <h2 className="text-xl font-semibold">{feature4.title}</h2>
-                <p className="text-muted-foreground">{feature4.description}</p>
-                <img
-                  src={feature4.image}
-                  alt={feature4.title}
-                  className="mt-8 aspect-[1.5] h-full w-full object-cover lg:aspect-[2.4]"
-                />
-              </div>
-            </div>
+          ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="text-center mt-16">
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+            <span>Explore All Features</span>
+            <Brain className="w-4 h-4" />
           </div>
         </div>
       </div>
