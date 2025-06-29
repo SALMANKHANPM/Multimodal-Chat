@@ -32,28 +32,49 @@ export function AudioRecorder({
   const chunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number>(undefined);
+  const animationFrameRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
+      // Cleanup on unmount
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     if (isRecording) {
-      interval = setInterval(() => {
+      // Start duration timer
+      intervalRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
+    } else {
+      // Clear duration timer
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [isRecording]);
 
   useEffect(() => {
@@ -63,7 +84,7 @@ export function AudioRecorder({
       if (!ctx) return;
 
       const drawWaveform = () => {
-        if (!analyserRef.current || !ctx) return;
+        if (!analyserRef.current || !ctx || !isRecording) return;
 
         const bufferLength = analyserRef.current.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
@@ -95,7 +116,9 @@ export function AudioRecorder({
         ctx.lineTo(canvas.width, canvas.height / 2);
         ctx.stroke();
 
-        animationFrameRef.current = requestAnimationFrame(drawWaveform);
+        if (isRecording) {
+          animationFrameRef.current = requestAnimationFrame(drawWaveform);
+        }
       };
 
       drawWaveform();
@@ -109,19 +132,35 @@ export function AudioRecorder({
   };
 
   const analyzeAudio = (stream: MediaStream) => {
-    audioContextRef.current = new AudioContext();
-    analyserRef.current = audioContextRef.current.createAnalyser();
-    const source = audioContextRef.current.createMediaStreamSource(stream);
-    source.connect(analyserRef.current);
-    analyserRef.current.fftSize = 2048;
+    try {
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+      analyserRef.current.fftSize = 2048;
+    } catch (error) {
+      console.error("Error setting up audio analysis:", error);
+    }
   };
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setIsPreparing(true);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        } 
+      });
+      
+      streamRef.current = stream;
+      
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: "audio/webm;codecs=opus",
       });
+      
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
       setRecordingDuration(0);
@@ -136,29 +175,88 @@ export function AudioRecorder({
         setIsPreparing(true);
         const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
         onAudioCaptured(audioBlob);
-        stream.getTracks().forEach((track) => track.stop());
+        
+        // Cleanup
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+        
         setIsPreparing(false);
         setRecordingDuration(0);
         setVolume(0);
         setIsRecording(false);
+        onRecordingStateChange?.(false);
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error("MediaRecorder error:", event);
+        stopRecording();
       };
 
       analyzeAudio(stream);
-      mediaRecorder.start();
+      mediaRecorder.start(100); // Collect data every 100ms
       setIsRecording(true);
+      setIsPreparing(false);
       onRecordingStateChange?.(true);
     } catch (error) {
       console.error("Error accessing microphone:", error);
+      setIsPreparing(false);
+      setIsRecording(false);
+      onRecordingStateChange?.(false);
+      
+      // Show user-friendly error
+      alert("Unable to access microphone. Please check your permissions and try again.");
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      onRecordingStateChange?.(false);
+    try {
+      if (mediaRecorderRef.current && isRecording) {
+        // Stop the media recorder
+        if (mediaRecorderRef.current.state === "recording") {
+          mediaRecorderRef.current.stop();
+        }
+      }
+      
+      // Stop animation frame
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
+      
+      // Close audio context
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      
+      // Stop all tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+      
+      // Clear interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      
+      // Update state
+      setIsRecording(false);
+      onRecordingStateChange?.(false);
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+      // Force state reset even if there's an error
+      setIsRecording(false);
+      onRecordingStateChange?.(false);
+    }
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open && isRecording) {
+      stopRecording();
     }
   };
 
@@ -171,14 +269,22 @@ export function AudioRecorder({
         disabled={isRecording || isPreparing}
         className="rounded-r-md rounded-l-none border-l-0"
       >
-        <Mic className="h-4 w-4" />
+        {isPreparing ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Mic className="h-4 w-4" />
+        )}
       </Button>
 
       <Dialog
         open={isRecording}
-        onOpenChange={(open) => !open && stopRecording()}
+        onOpenChange={handleDialogOpenChange}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent 
+          className="sm:max-w-md"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Recording Audio ({sourceLang})</DialogTitle>
           </DialogHeader>
@@ -198,11 +304,19 @@ export function AudioRecorder({
                 size="icon"
                 onClick={stopRecording}
                 className="relative"
+                disabled={isPreparing}
               >
-                <Square className="h-4 w-4" />
+                {isPreparing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
                 <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Click the stop button or press Escape to finish recording
+            </p>
           </div>
         </DialogContent>
       </Dialog>
