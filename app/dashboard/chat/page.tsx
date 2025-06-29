@@ -23,7 +23,16 @@ import {
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
-import { AI_Prompt, UploadedFile } from "@/components/ui/ai-prompt";
+import { AI_Prompt } from "@/components/ui/ai-prompt";
+
+// Define the UploadedFile interface to match the AI_Prompt component
+interface UploadedFile {
+  id: string;
+  file: File;
+  type: 'audio' | 'document' | 'image' | 'video';
+  preview?: string;
+  audioUrl?: string;
+}
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -247,15 +256,32 @@ export default function Chat() {
             key={index}
             isUser={message.role === "user"}
             isError={message.role === "error"}
-            media={[
-              ...(message.images?.map(img => ({ type: 'image' as const, url: img })) || []),
-              ...(message.audio ? [{ type: 'audio' as const, url: message.audio }] : [])
-            ]}
           >
             {typeof message.content === "string" ? (
               <p>{message.content}</p>
             ) : (
               message.content
+            )}
+            {message.images && message.images.length > 0 && (
+              <div className="mt-2">
+                {message.images.map((img, imgIndex) => (
+                  <img
+                    key={imgIndex}
+                    src={img}
+                    alt={`Uploaded ${imgIndex + 1}`}
+                    className="max-h-60 rounded-md mt-2 hover:opacity-90 transition-opacity cursor-pointer"
+                  />
+                ))}
+              </div>
+            )}
+            {message.audio && (
+              <div className="mt-2">
+                <audio
+                  controls
+                  src={message.audio}
+                  className="w-full rounded-md bg-background"
+                />
+              </div>
             )}
           </ChatMessage>
         ))}
@@ -357,7 +383,6 @@ export default function Chat() {
           <AI_Prompt 
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
-            placeholder="Type your message or upload files..."
           />
         </div>
       </div>
