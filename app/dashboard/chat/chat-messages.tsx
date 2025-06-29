@@ -7,6 +7,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   RiCodeSSlashLine,
   RiBookLine,
   RiLoopRightFill,
@@ -17,8 +24,11 @@ import {
   RiDownloadLine,
   RiFilePdfLine,
   RiFileTextLine,
+  RiExpandDiagonalLine,
+  RiZoomInLine,
 } from "@remixicon/react";
 import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 type MessageMedia = {
   type: "image" | "audio" | "document";
@@ -89,7 +99,7 @@ export function ChatMessage({
           {children}
 
           {media && media.length > 0 && (
-            <div className="mt-2 space-y-3">
+            <div className="mt-3 space-y-3">
               {media.map((item, index) => (
                 <MediaRenderer key={index} media={item} />
               ))}
@@ -115,35 +125,7 @@ type MediaRendererProps = {
 
 function MediaRenderer({ media }: MediaRendererProps) {
   if (media.type === "image") {
-    return (
-      <div className="relative rounded-lg overflow-hidden">
-        <div className="relative aspect-video max-h-60 bg-muted/50">
-          <img
-            src={media.url}
-            alt={media.alt || "Shared image"}
-            className="rounded-lg object-contain w-full h-full"
-          />
-        </div>
-        <div className="absolute bottom-2 right-2">
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <a
-                  href={media.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-background/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-background transition-colors"
-                >
-                  <RiDownloadLine size={16} />
-                  <span className="sr-only">View full image</span>
-                </a>
-              </TooltipTrigger>
-              <TooltipContent side="top">View full image</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-    );
+    return <ImagePreview media={media} />;
   } else if (media.type === "audio") {
     return <AudioPlayer url={media.url} />;
   } else if (media.type === "document") {
@@ -151,6 +133,138 @@ function MediaRenderer({ media }: MediaRendererProps) {
   }
 
   return null;
+}
+
+function ImagePreview({ media }: { media: MessageMedia }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  return (
+    <div className="group relative">
+      {/* Image Container */}
+      <div className="relative rounded-xl overflow-hidden bg-muted/30 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="relative aspect-video max-h-80 bg-gradient-to-br from-muted/50 to-muted/80">
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+            </div>
+          )}
+          
+          {hasError ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+              <RiArticleLine size={32} className="mb-2" />
+              <span className="text-sm">Failed to load image</span>
+            </div>
+          ) : (
+            <img
+              src={media.url}
+              alt={media.alt || media.name || "Shared image"}
+              className={cn(
+                "w-full h-full object-cover transition-all duration-300",
+                "group-hover:scale-[1.02]",
+                isLoading ? "opacity-0" : "opacity-100"
+              )}
+              onLoad={() => setIsLoading(false)}
+              onError={() => {
+                setIsLoading(false);
+                setHasError(true);
+              }}
+            />
+          )}
+        </div>
+
+        {/* Overlay with actions */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200">
+          <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* Zoom/View Full Size */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background/90 border border-border/50"
+                >
+                  <RiExpandDiagonalLine size={14} />
+                  <span className="sr-only">View full size</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl w-full p-0 bg-transparent border-0 shadow-none">
+                <DialogHeader className="sr-only">
+                  <DialogTitle>Full size image</DialogTitle>
+                </DialogHeader>
+                <div className="relative w-full max-h-[90vh] bg-black/90 rounded-lg overflow-hidden">
+                  <img
+                    src={media.url}
+                    alt={media.alt || media.name || "Full size image"}
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute top-4 right-4">
+                    <TooltipProvider delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={media.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-10 w-10 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background/90 transition-colors border border-border/50"
+                          >
+                            <RiDownloadLine size={16} />
+                            <span className="sr-only">Download image</span>
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Download image</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Download */}
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={media.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center h-8 w-8 bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors border border-border/50"
+                  >
+                    <RiDownloadLine size={14} />
+                    <span className="sr-only">Download image</span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent side="left">Download image</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      </div>
+
+      {/* Image Info */}
+      {(media.name || media.size) && (
+        <div className="mt-2 px-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            {media.name && (
+              <span className="truncate font-medium">{media.name}</span>
+            )}
+            {media.size && (
+              <span className="ml-2 flex-shrink-0">{formatFileSize(media.size)}</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function DocumentPreview({ media }: { media: MessageMedia }) {
@@ -174,7 +288,7 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
   };
 
   return (
-    <div className="bg-background rounded-lg p-3 border border-border shadow-sm">
+    <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0">
           {getFileIcon(media.name)}
@@ -199,7 +313,7 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
                   href={media.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors"
+                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                 >
                   <RiDownloadLine size={18} />
                   <span className="sr-only">Download document</span>
