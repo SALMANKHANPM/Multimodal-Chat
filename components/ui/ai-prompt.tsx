@@ -1010,7 +1010,7 @@ export function AI_Prompt() {
     };
 
     return (
-        <div className="w-4/6 py-4">
+        <div className="w-full py-4">
             <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
                 <div className="relative">
                     <div className="relative flex flex-col">
