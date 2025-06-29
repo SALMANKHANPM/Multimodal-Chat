@@ -92,27 +92,27 @@ export default function Chat() {
   };
 
   const handleSendMessage = async (messageText: string, files?: UploadedFile[]) => {
-    // Check if API is available before proceeding
+    // Always show the user message immediately, regardless of API status
+    const newMessage: Message = {
+      role: "user",
+      content: messageText,
+      images: files?.filter(f => f.type === 'image' && f.preview).map(f => f.preview!) || undefined,
+      audio: files?.find(f => f.type === 'audio')?.audioUrl || undefined,
+    };
+    setMessages((prev) => [...prev, newMessage]);
+
+    // If API is unavailable, show a message but don't prevent the user message from appearing
     if (apiStatus === 'unavailable') {
-      setAlert({
-        title: "API Server Unavailable",
-        description: "The backend API server is not running or accessible. Please ensure the server is started and try again.",
-        variant: "destructive",
-      });
+      const errorMessage: Message = {
+        role: "error",
+        content: "API server is unavailable. Your message has been saved but cannot be processed right now. Please ensure the backend service is running and try again.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
       return;
     }
 
     try {
       setIsLoading(true);
-      
-      // Create user message with text and files
-      const newMessage: Message = {
-        role: "user",
-        content: messageText,
-        images: files?.filter(f => f.type === 'image' && f.preview).map(f => f.preview!) || undefined,
-        audio: files?.find(f => f.type === 'audio')?.audioUrl || undefined,
-      };
-      setMessages((prev) => [...prev, newMessage]);
 
       let options: ProcessOptions = {
         sourceLang,
@@ -343,8 +343,8 @@ export default function Chat() {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Backend API Unavailable</AlertTitle>
             <AlertDescription>
-              The backend API server is not running or accessible. Please ensure the server is started on{" "}
-              {process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"} and refresh the page.
+              The backend API server is not running or accessible. You can still send messages, but they won't be processed until the server is available at{" "}
+              {process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}.
             </AlertDescription>
           </Alert>
         </div>
@@ -383,7 +383,6 @@ export default function Chat() {
           <AI_Prompt 
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
-            //disabled={apiStatus === 'unavailable'}
           />
         </div>
       </div>
