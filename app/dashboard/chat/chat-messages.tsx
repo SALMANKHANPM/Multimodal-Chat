@@ -49,6 +49,21 @@ type ChatMessageProps = {
   timestamp?: string;
 };
 
+// Utility function to truncate filename for mobile
+function truncateFilename(filename: string, maxLength: number = 10): string {
+  if (!filename || filename.length <= maxLength) return filename;
+  
+  const extension = filename.split('.').pop();
+  const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+  
+  if (extension) {
+    const truncatedName = nameWithoutExt.substring(0, maxLength - extension.length - 1);
+    return `${truncatedName}...${extension}`;
+  }
+  
+  return `${filename.substring(0, maxLength)}...`;
+}
+
 export function ChatMessage({
   isUser,
   isError,
@@ -79,7 +94,7 @@ export function ChatMessage({
       />
       <div
         className={cn(
-          "max-w-[80%]",
+          "max-w-[80%] sm:max-w-[70%] md:max-w-[80%]",
           isUser
             ? "bg-muted px-4 py-3 rounded-xl"
             : isError
@@ -159,20 +174,35 @@ function ImagePreview({ media }: { media: MessageMedia }) {
     document.body.removeChild(link);
   };
 
+  const displayName = media.name || 'Image';
+  const truncatedName = truncateFilename(displayName, 12);
+
   return (
     <>
-      <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
-        <div className="flex items-center gap-3">
+      <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 max-w-full">
+        <div className="flex items-center gap-3 min-w-0">
           {/* Image Icon */}
           <div className="flex-shrink-0">
-            <RiImageLine size={24} className="text-blue-500" />
+            <RiImageLine size={20} className="text-blue-500" />
           </div>
           
           {/* File Info */}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {media.name || 'Image'}
-            </p>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-sm font-medium text-foreground truncate cursor-help">
+                    <span className="sm:hidden">{truncatedName}</span>
+                    <span className="hidden sm:inline">{displayName}</span>
+                  </p>
+                </TooltipTrigger>
+                {displayName !== truncatedName && (
+                  <TooltipContent side="top" className="max-w-xs break-all">
+                    {displayName}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             {media.size && (
               <p className="text-xs text-muted-foreground">
                 {formatFileSize(media.size)}
@@ -181,7 +211,7 @@ function ImagePreview({ media }: { media: MessageMedia }) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {/* Preview Button */}
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -190,11 +220,11 @@ function ImagePreview({ media }: { media: MessageMedia }) {
                     onClick={handlePreviewClick}
                     className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                   >
-                    <RiZoomInLine size={18} />
+                    <RiZoomInLine size={16} />
                     <span className="sr-only">Preview image</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Preview image</TooltipContent>
+                <TooltipContent side="top">Preview</TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
@@ -206,11 +236,11 @@ function ImagePreview({ media }: { media: MessageMedia }) {
                     onClick={handleDownload}
                     className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                   >
-                    <RiDownloadLine size={18} />
+                    <RiDownloadLine size={16} />
                     <span className="sr-only">Download image</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Download image</TooltipContent>
+                <TooltipContent side="top">Download</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -269,13 +299,13 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const getFileIcon = (fileName?: string) => {
-    if (!fileName) return <RiFileTextLine size={24} />;
+    if (!fileName) return <RiFileTextLine size={20} />;
     
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (extension === 'pdf') {
-      return <RiFilePdfLine size={24} className="text-red-500" />;
+      return <RiFilePdfLine size={20} className="text-red-500" />;
     }
-    return <RiFileTextLine size={24} />;
+    return <RiFileTextLine size={20} />;
   };
 
   const isPDF = media.name?.toLowerCase().endsWith('.pdf');
@@ -300,18 +330,33 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
     document.body.removeChild(link);
   };
 
+  const displayName = media.name || 'Document';
+  const truncatedName = truncateFilename(displayName, 12);
+
   return (
     <>
-      <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
-        <div className="flex items-center gap-3">
+      <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 max-w-full">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="flex-shrink-0">
             {getFileIcon(media.name)}
           </div>
           
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {media.name || 'Document'}
-            </p>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-sm font-medium text-foreground truncate cursor-help">
+                    <span className="sm:hidden">{truncatedName}</span>
+                    <span className="hidden sm:inline">{displayName}</span>
+                  </p>
+                </TooltipTrigger>
+                {displayName !== truncatedName && (
+                  <TooltipContent side="top" className="max-w-xs break-all">
+                    {displayName}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             {media.size && (
               <p className="text-xs text-muted-foreground">
                 {formatFileSize(media.size)}
@@ -319,7 +364,7 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {/* Preview Button (for PDFs) */}
             {isPDF && (
               <TooltipProvider delayDuration={0}>
@@ -329,11 +374,11 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
                       onClick={handlePreviewClick}
                       className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                     >
-                      <RiZoomInLine size={18} />
+                      <RiZoomInLine size={16} />
                       <span className="sr-only">Preview document</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top">Preview document</TooltipContent>
+                  <TooltipContent side="top">Preview</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
@@ -346,11 +391,11 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
                     onClick={handleDownload}
                     className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                   >
-                    <RiDownloadLine size={18} />
+                    <RiDownloadLine size={16} />
                     <span className="sr-only">Download document</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Download document</TooltipContent>
+                <TooltipContent side="top">Download</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -367,8 +412,8 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
             <div className="relative w-full h-full flex flex-col">
               {/* Header with close and download */}
               <div className="flex items-center justify-between p-4 border-b bg-muted/50">
-                <h3 className="text-lg font-semibold truncate">{media.name}</h3>
-                <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold truncate pr-4">{media.name}</h3>
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -463,21 +508,36 @@ function AudioPlayer({ media }: { media: MessageMedia }) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const displayName = media.name || 'Audio';
+  const truncatedName = truncateFilename(displayName, 12);
+
   return (
-    <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 max-w-full">
       <audio ref={audioRef} src={media.url} className="hidden" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         {/* Audio Icon */}
         <div className="flex-shrink-0">
-          <RiVolumeUpLine size={24} className="text-green-500" />
+          <RiVolumeUpLine size={20} className="text-green-500" />
         </div>
         
         {/* File Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
-            {media.name || 'Audio'}
-          </p>
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="text-sm font-medium text-foreground truncate cursor-help">
+                  <span className="sm:hidden">{truncatedName}</span>
+                  <span className="hidden sm:inline">{displayName}</span>
+                </p>
+              </TooltipTrigger>
+              {displayName !== truncatedName && (
+                <TooltipContent side="top" className="max-w-xs break-all">
+                  {displayName}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {media.size && <span>{formatFileSize(media.size)}</span>}
             {duration > 0 && (
@@ -490,7 +550,7 @@ function AudioPlayer({ media }: { media: MessageMedia }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {/* Play/Pause Button */}
           <TooltipProvider delayDuration={0}>
             <Tooltip>
@@ -499,11 +559,11 @@ function AudioPlayer({ media }: { media: MessageMedia }) {
                   onClick={togglePlayPause}
                   className="bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition-colors"
                 >
-                  {isPlaying ? <RiPauseFill size={16} /> : <RiPlayFill size={16} />}
+                  {isPlaying ? <RiPauseFill size={14} /> : <RiPlayFill size={14} />}
                   <span className="sr-only">{isPlaying ? 'Pause' : 'Play'} audio</span>
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top">{isPlaying ? 'Pause' : 'Play'} audio</TooltipContent>
+              <TooltipContent side="top">{isPlaying ? 'Pause' : 'Play'}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
@@ -515,11 +575,11 @@ function AudioPlayer({ media }: { media: MessageMedia }) {
                   onClick={handleDownload}
                   className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
                 >
-                  <RiDownloadLine size={18} />
+                  <RiDownloadLine size={16} />
                   <span className="sr-only">Download audio</span>
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top">Download audio</TooltipContent>
+              <TooltipContent side="top">Download</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
