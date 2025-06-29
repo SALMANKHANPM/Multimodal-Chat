@@ -385,6 +385,14 @@ interface AudioPreviewProps {
     onRemove: () => void;
 }
 
+function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 function AudioPreview({ file, isRecording, onRemove }: AudioPreviewProps) {
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -808,7 +816,13 @@ function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderPr
     );
 }
 
-export function AI_Prompt() {
+interface AI_PromptProps {
+    onSendMessage?: (message: string, files: UploadedFile[]) => void;
+    isLoading?: boolean;
+    disabled?: boolean;
+}
+
+export function AI_Prompt({ onSendMessage, isLoading = false, disabled = false }: AI_PromptProps) {
     const [value, setValue] = useState("");
     const { textareaRef, adjustHeight } = useAutoResizeTextarea({
         minHeight: 72,
@@ -826,98 +840,53 @@ export function AI_Prompt() {
         "Gemini 2.5 Flash",
         "Claude 3.5 Sonnet",
         "GPT-4-1 Mini",
-        "GPT-4-1",
+        "GPT-4o",
+        "GPT-4o mini",
+        "Claude 3.5 Haiku",
+        "Claude 3 Opus",
+        "Gemini 1.5 Pro",
+        "Gemini 1.5 Flash",
+        "Llama 3.1 405B",
+        "Llama 3.1 70B",
+        "Llama 3.1 8B",
+        "Mistral Large",
+        "Mistral 7B",
+        "Codestral",
+        "DeepSeek Coder V2",
+        "Qwen 2.5 Coder",
     ];
 
-    const MODEL_ICONS: Record<string, React.ReactNode> = {
-        "o3-mini": OPENAI_ICON,
-        "Gemini 2.5 Flash": (
-            <svg
-                height="1em"
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <title>Gemini</title>
-                <defs>
-                    <linearGradient
-                        id="lobe-icons-gemini-fill"
-                        x1="0%"
-                        x2="68.73%"
-                        y1="100%"
-                        y2="30.395%"
-                    >
-                        <stop offset="0%" stopColor="#1C7DFF" />
-                        <stop offset="52.021%" stopColor="#1C69FF" />
-                        <stop offset="100%" stopColor="#F0DCD6" />
-                    </linearGradient>
-                </defs>
-                <path
-                    d="M12 24A14.304 14.304 0 000 12 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 0 00-12 12"
-                    fill="url(#lobe-icons-gemini-fill)"
-                    fillRule="nonzero"
-                />
-            </svg>
-        ),
-        "Claude 3.5 Sonnet": (
-            <>
-                <svg
-                    fill="#000"
-                    fillRule="evenodd"
-                    className="w-4 h-4 dark:hidden block"
-                    viewBox="0 0 24 24"
-                    width="1em"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <title>Anthropic Icon Light</title>
-                    <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
-                </svg>
-                <svg
-                    fill="#fff"
-                    fillRule="evenodd"
-                    className="w-4 h-4 hidden dark:block"
-                    viewBox="0 0 24 24"
-                    width="1em"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <title>Anthropic Icon Dark</title>
-                    <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
-                </svg>
-            </>
-        ),
-        "GPT-4-1 Mini": OPENAI_ICON,
-        "GPT-4-1": OPENAI_ICON,
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if ((!value.trim() && uploadedFiles.length === 0) || isLoading || disabled) return;
+
+        // Call the parent's onSendMessage function
+        if (onSendMessage) {
+            onSendMessage(value, uploadedFiles);
+        }
+
+        // Clear the form
+        setValue("");
+        setUploadedFiles([]);
+        adjustHeight(true);
     };
 
-        const getFileType = (file: File): 'audio' | 'document' | 'image' | 'video' => {
-        const type = file.type;
-        if (type.startsWith('audio/')) return 'audio';
-        if (type.startsWith('image/')) return 'image';
-        if (type.startsWith('video/')) return 'video';
-        return 'document';
-    };
-
-    const getFileIcon = (type: 'audio' | 'document' | 'image' | 'video') => {
-        switch (type) {
-            case 'audio': return <Music className="w-4 h-4" />;
-            case 'image': return <Image className="w-4 h-4" />;
-            case 'video': return <Video className="w-4 h-4" />;
-            default: return <FileText className="w-4 h-4" />;
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
         }
     };
 
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setValue(e.target.value);
+        adjustHeight();
     };
 
-        const handleFileUpload = (files: FileList | null) => {
+    const handleFileUpload = (files: FileList | null) => {
         if (!files) return;
 
-                Array.from(files).forEach(file => {
+        Array.from(files).forEach((file) => {
             const fileType = getFileType(file);
             const newFile: UploadedFile = {
                 id: Math.random().toString(36).substr(2, 9),
@@ -925,61 +894,42 @@ export function AI_Prompt() {
                 type: fileType,
             };
 
-            // Create preview for images
             if (fileType === 'image') {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    setUploadedFiles(prev => prev.map(f => 
-                        f.id === newFile.id ? { ...f, preview: e.target?.result as string } : f
-                    ));
+                    newFile.preview = e.target?.result as string;
+                    setUploadedFiles(prev => [...prev, newFile]);
                 };
                 reader.readAsDataURL(file);
+            } else if (fileType === 'audio') {
+                newFile.audioUrl = URL.createObjectURL(file);
+                setUploadedFiles(prev => [...prev, newFile]);
+            } else {
+                setUploadedFiles(prev => [...prev, newFile]);
             }
-
-            // Create audio URL for audio files
-            if (fileType === 'audio') {
-                const audioUrl = URL.createObjectURL(file);
-                newFile.audioUrl = audioUrl;
-            }
-
-            setUploadedFiles(prev => [...prev, newFile]);
         });
     };
 
-        const handleRecordingComplete = (recording: AudioRecording) => {
-        setAudioRecordings(prev => [...prev, recording]);
-        
-        // Convert recording to file and add to uploaded files
-        const audioFile = new File([recording.blob], `recording-${recording.id}.wav`, {
-            type: recording.blob.type || 'audio/wav'
-        });
-        
-        // Create audio URL for playback
-        const audioUrl = URL.createObjectURL(recording.blob);
-        
-        const newFile: UploadedFile = {
+    const getFileType = (file: File): UploadedFile['type'] => {
+        if (file.type.startsWith('image/')) return 'image';
+        if (file.type.startsWith('audio/')) return 'audio';
+        if (file.type.startsWith('video/')) return 'video';
+        return 'document';
+    };
+
+    const removeFile = (id: string) => {
+        setUploadedFiles(prev => prev.filter(file => file.id !== id));
+    };
+
+    const handleRecordingComplete = (recording: AudioRecording) => {
+        const audioFile: UploadedFile = {
             id: recording.id,
-            file: audioFile,
+            file: new File([recording.blob], `recording-${Date.now()}.webm`, { type: 'audio/webm' }),
             type: 'audio',
-            audioUrl: audioUrl
+            audioUrl: URL.createObjectURL(recording.blob),
         };
-        
-        setUploadedFiles(prev => [...prev, newFile]);
-    };
-
-    const removeAudioRecording = (recordingId: string) => {
-        setAudioRecordings(prev => prev.filter(r => r.id !== recordingId));
-        removeFile(recordingId);
-    };
-
-        const removeFile = (fileId: string) => {
-        setUploadedFiles(prev => {
-            const fileToRemove = prev.find(f => f.id === fileId);
-            if (fileToRemove?.audioUrl) {
-                URL.revokeObjectURL(fileToRemove.audioUrl);
-            }
-            return prev.filter(f => f.id !== fileId);
-        });
+        setUploadedFiles(prev => [...prev, audioFile]);
+        setAudioRecordings(prev => [...prev, recording]);
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -998,251 +948,223 @@ export function AI_Prompt() {
         handleFileUpload(e.dataTransfer.files);
     };
 
-        const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === "Enter" && !e.shiftKey && (value.trim() || uploadedFiles.length > 0)) {
-            e.preventDefault();
-            setValue("");
-            setUploadedFiles([]);
-            setAudioRecordings([]);
-            adjustHeight(true);
-            // Here you can add message sending     
+    const renderFilePreview = (file: UploadedFile) => {
+        switch (file.type) {
+            case 'image':
+                return (
+                    <div className="relative group">
+                        <img
+                            src={file.preview}
+                            alt="Preview"
+                            className="w-16 h-16 object-cover rounded-lg"
+                        />
+                        <button
+                            onClick={() => removeFile(file.id)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                            aria-label="Remove file"
+                        >
+                            <X className="w-4 h-4 text-white" />
+                        </button>
+                    </div>
+                );
+            case 'audio':
+                return (
+                    <div className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg min-w-0">
+                        <AudioPreview file={file} onRemove={() => removeFile(file.id)} />
+                    </div>
+                );
+            case 'video':
+                return (
+                    <div className="relative group">
+                        <div className="w-16 h-16 bg-black/10 dark:bg-white/10 rounded-lg flex items-center justify-center">
+                            <Video className="w-8 h-8" />
+                        </div>
+                        <button
+                            onClick={() => removeFile(file.id)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                            aria-label="Remove file"
+                        >
+                            <X className="w-4 h-4 text-white" />
+                        </button>
+                    </div>
+                );
+            default:
+                return (
+                    <div className="relative group">
+                        <div className="w-16 h-16 bg-black/10 dark:bg-white/10 rounded-lg flex items-center justify-center">
+                            <FileText className="w-8 h-8" />
+                        </div>
+                        <button
+                            onClick={() => removeFile(file.id)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                            aria-label="Remove file"
+                        >
+                            <X className="w-4 h-4 text-white" />
+                        </button>
+                    </div>
+                );
         }
     };
 
     return (
-        <div className="w-full py-4">
-            <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
-                <div className="relative">
-                    <div className="relative flex flex-col">
-                                                <div
-                            className="overflow-y-auto"
-                            style={{ maxHeight: "400px" }}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                        >
-                            {/* File Previews */}
-                            <AnimatePresence>
-                                {uploadedFiles.length > 0 && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="px-4 pt-3 pb-2"
+        <>
+            <div className="w-full max-w-4xl mx-auto">
+                <form onSubmit={handleSubmit} className="relative">
+                    <div
+                        className={cn(
+                            "relative flex flex-col w-full rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-black transition-all duration-200",
+                            isDragOver && "border-blue-500 bg-blue-50 dark:bg-blue-950/20",
+                            disabled && "opacity-50 cursor-not-allowed"
+                        )}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
+                        {/* Model Selector */}
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-black/5 dark:border-white/5">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 px-2 text-xs font-medium text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
+                                        disabled={disabled}
                                     >
-                                                                                <div className="flex flex-wrap gap-2">
-                                            {uploadedFiles.map((file) => {
-                                                const isAudioRecording = audioRecordings.find(r => r.id === file.id);
-                                                
-                                                return (
-                                                    <motion.div
-                                                        key={file.id}
-                                                        initial={{ opacity: 0, scale: 0.8 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        exit={{ opacity: 0, scale: 0.8 }}
-                                                        className={cn(
-                                                            "bg-black/10 dark:bg-white/10 rounded-lg p-2",
-                                                            file.type === 'audio' ? "max-w-sm" : "max-w-xs",
-                                                            file.type === 'audio' ? "flex flex-col gap-2" : "flex items-center gap-2"
-                                                        )}
-                                                    >
-                                                                                                                {file.type === 'audio' ? (
-                                                            <AudioPreview
-                                                                file={file}
-                                                                isRecording={isAudioRecording}
-                                                                onRemove={() => isAudioRecording ? removeAudioRecording(file.id) : removeFile(file.id)}
-                                                            />
-                                                        ) : (
-                                                            <>
-                                                                {file.type === 'image' && file.preview ? (
-                                                                    <img
-                                                                        src={file.preview}
-                                                                        alt={file.file.name}
-                                                                        className="w-8 h-8 rounded object-cover"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-8 h-8 rounded bg-black/10 dark:bg-white/10 flex items-center justify-center">
-                                                                        {getFileIcon(file.type)}
-                                                                    </div>
-                                                                )}
-                                                                <div className="flex-1 min-w-0">
-                                                                    {file.type !== 'image' && (
-                                                                        <p className="text-xs font-medium truncate dark:text-white">
-                                                                            {file.file.name}
-                                                                        </p>
-                                                                    )}
-                                                                    <p className="text-xs text-black/50 dark:text-white/50">
-                                                                        {formatFileSize(file.file.size)}
-                                                                    </p>
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => removeFile(file.id)}
-                                                                    className="w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
-                                                                    aria-label="Remove file"
-                                                                >
-                                                                    <X className="w-4 h-4 text-white" />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </motion.div>
-                                                );
-                                            })}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            <Textarea
-                                id="ai-input-15"
-                                value={value}
-                                placeholder={uploadedFiles.length > 0 ? "Add a message..." : "What can I do for you?"}
-                                className={cn(
-                                    "w-full px-4 py-3 bg-black/5 dark:bg-white/5 border-none dark:text-white placeholder:text-black/70 dark:placeholder:text-white/70 resize-none focus-visible:ring-0 focus-visible:ring-offset-0",
-                                    "min-h-[72px]",
-                                    uploadedFiles.length > 0 ? "rounded-none" : "rounded-xl rounded-b-none",
-                                    isDragOver && "bg-blue-50 dark:bg-blue-950/20 border-2 border-dashed border-blue-300 dark:border-blue-600"
-                                )}
-                                ref={textareaRef}
-                                onKeyDown={handleKeyDown}
-                                onChange={(e) => {
-                                    setValue(e.target.value);
-                                    adjustHeight();
-                                }}
-                            />
+                                        {OPENAI_ICON}
+                                        <span className="ml-2">{selectedModel}</span>
+                                        <ChevronDown className="ml-2 h-3 w-3" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-56">
+                                    {AI_MODELS.map((model) => (
+                                        <DropdownMenuItem
+                                            key={model}
+                                            onClick={() => setSelectedModel(model)}
+                                            className="text-sm"
+                                        >
+                                            <div className="flex items-center w-full">
+                                                {OPENAI_ICON}
+                                                <span className="ml-2 flex-1">{model}</span>
+                                                {selectedModel === model && (
+                                                    <Check className="ml-2 h-4 w-4" />
+                                                )}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
 
-                        <div className="h-14 bg-black/5 dark:bg-white/5 rounded-b-xl flex items-center">
-                            <div className="absolute left-3 right-3 bottom-3 flex items-center justify-between w-[calc(100%-24px)]">
-                                <div className="flex items-center gap-2">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                className="flex items-center gap-1 h-8 pl-1 pr-2 text-xs rounded-md dark:text-white hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
-                                            >
-                                                <AnimatePresence mode="wait">
-                                                    <motion.div
-                                                        key={selectedModel}
-                                                        initial={{
-                                                            opacity: 0,
-                                                            y: -5,
-                                                        }}
-                                                        animate={{
-                                                            opacity: 1,
-                                                            y: 0,
-                                                        }}
-                                                        exit={{
-                                                            opacity: 0,
-                                                            y: 5,
-                                                        }}
-                                                        transition={{
-                                                            duration: 0.15,
-                                                        }}
-                                                        className="flex items-center gap-1"
-                                                    >
-                                                        {
-                                                            MODEL_ICONS[
-                                                                selectedModel
-                                                            ]
-                                                        }
-                                                        {selectedModel}
-                                                        <ChevronDown className="w-3 h-3 opacity-50" />
-                                                    </motion.div>
-                                                </AnimatePresence>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent
-                                            className={cn(
-                                                "min-w-[10rem]",
-                                                "border-black/10 dark:border-white/10",
-                                                "bg-gradient-to-b from-white via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-800"
-                                            )}
-                                        >
-                                            {AI_MODELS.map((model) => (
-                                                <DropdownMenuItem
-                                                    key={model}
-                                                    onSelect={() =>
-                                                        setSelectedModel(model)
-                                                    }
-                                                    className="flex items-center justify-between gap-2"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        {MODEL_ICONS[model] || (
-                                                            <Bot className="w-4 h-4 opacity-50" />
-                                                        )}
-                                                        <span>{model}</span>
-                                                    </div>
-                                                    {selectedModel ===
-                                                        model && (
-                                                            <Check className="w-4 h-4 text-blue-500" />
-                                                        )}
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <div className="h-4 w-px bg-black/10 dark:bg-white/10 mx-0.5" />
-                                                                        <label
-                                        className={cn(
-                                            "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
-                                            "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                                            "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
-                                        )}
-                                        aria-label="Attach file"
-                                    >
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            className="hidden"
-                                            multiple
-                                            accept="audio/*,video/*,image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx"
-                                            onChange={(e) => handleFileUpload(e.target.files)}
-                                        />
-                                                                                <Paperclip className="w-4 h-4 transition-colors" />
-                                    </label>
-                                    <button
-                                        onClick={() => setIsVoiceRecorderOpen(true)}
-                                        className={cn(
-                                            "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
-                                            "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                                            "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
-                                        )}
-                                        aria-label="Record voice message"
-                                    >
-                                        <Mic className="w-4 h-4 transition-colors" />
-                                    </button>
-                                </div>
-                                <button
-                                    type="button"
-                                    className={cn(
-                                        "rounded-lg p-2 bg-black/5 dark:bg-white/5",
-                                        "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
-                                    )}
-                                    aria-label="Send message"
-                                                                        disabled={!value.trim() && uploadedFiles.length === 0}
-                                                                        onClick={() => {
-                                        if (!value.trim() && uploadedFiles.length === 0) return;
-                                        setValue("");
-                                        setUploadedFiles([]);
-                                        setAudioRecordings([]);
-                                        adjustHeight(true);
-                                        // Here you can add message sending
-                                    }}
+                        {/* File Previews */}
+                        <AnimatePresence>
+                            {uploadedFiles.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="px-4 py-3 border-b border-black/5 dark:border-white/5"
                                 >
-                                                                        <ArrowRight
-                                        className={cn(
-                                            "w-4 h-4 dark:text-white transition-opacity duration-200",
-                                            (value.trim() || uploadedFiles.length > 0)
-                                                ? "opacity-100"
-                                                : "opacity-30"
-                                        )}
-                                    />
-                                </button>
+                                    <div className="flex flex-wrap gap-2">
+                                        {uploadedFiles.map((file) => (
+                                            <motion.div
+                                                key={file.id}
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.8 }}
+                                                className="flex-shrink-0"
+                                            >
+                                                {renderFilePreview(file)}
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Input Area */}
+                        <div className="flex items-end gap-2 p-4">
+                            <div className="flex-1 min-w-0">
+                                <Textarea
+                                    ref={textareaRef}
+                                    value={value}
+                                    onChange={handleInputChange}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder={disabled ? "Chat is disabled" : "Message AI..."}
+                                    className="min-h-[72px] w-full resize-none border-0 bg-transparent p-0 text-base placeholder:text-black/40 dark:placeholder:text-white/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    disabled={disabled}
+                                />
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-1">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt"
+                                    onChange={(e) => handleFileUpload(e.target.files)}
+                                    className="hidden"
+                                />
+                                
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={disabled}
+                                >
+                                    <Paperclip className="h-4 w-4" />
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white"
+                                    onClick={() => setIsVoiceRecorderOpen(true)}
+                                    disabled={disabled}
+                                >
+                                    <Mic className="h-4 w-4" />
+                                </Button>
+
+                                <Button
+                                    type="submit"
+                                    size="icon"
+                                    className="h-8 w-8 bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80"
+                                    disabled={(!value.trim() && uploadedFiles.length === 0) || isLoading || disabled}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <ArrowRight className="h-4 w-4" />
+                                    )}
+                                </Button>
                             </div>
                         </div>
+
+                        {/* Drag overlay */}
+                        <AnimatePresence>
+                            {isDragOver && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-3xl flex items-center justify-center"
+                                >
+                                    <div className="text-center">
+                                        <Paperclip className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                            Drop files here to upload
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
-                                </div>
+                </form>
             </div>
-            
+
             <AnimatePresence>
                 {isVoiceRecorderOpen && (
                     <VoiceRecorder
@@ -1252,11 +1174,6 @@ export function AI_Prompt() {
                     />
                 )}
             </AnimatePresence>
-        </div>
+        </>
     );
-}
-
-
-export default function AI_Prompt_Demo() {
-    return <AI_Prompt />;
 }
