@@ -23,7 +23,16 @@ import {
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
-import { AI_Prompt, UploadedFile } from "@/components/ui/ai-prompt";
+import { AI_Prompt } from "@/components/ui/ai-prompt";
+
+// Define the UploadedFile interface to match the AI_Prompt component
+interface UploadedFile {
+  id: string;
+  file: File;
+  type: 'audio' | 'document' | 'image' | 'video';
+  preview?: string;
+  audioUrl?: string;
+}
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
