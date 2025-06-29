@@ -328,13 +328,13 @@ export default function Chat() {
   return (
     <div className="sticky top-0 w-full h-full flex flex-col shadow-md md:rounded-s-[inherit] min-[1024px]:rounded-e-3xl bg-background">
       {/* Header */}
-      <div className="py-5 sticky bg-background top-0 z-10 px-4 md:px-6 lg:px-8 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-black/[0.06] before:via-black/10 before:to-black/[0.06]">
+      <div className="py-3 sm:py-5 sticky bg-background top-0 z-10 px-3 sm:px-4 md:px-6 lg:px-8 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-black/[0.06] before:via-black/10 before:to-black/[0.06]">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">translations.aiAssistant</h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <h1 className="text-lg sm:text-xl font-semibold truncate">translations.aiAssistant</h1>
             {/* API Status Indicator */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               {apiStatus === 'checking' && (
                 <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Checking API status..." />
               )}
@@ -347,19 +347,19 @@ export default function Chat() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center flex-shrink-0">
             {messages.length > 0 ? (
               <Button
                 variant="ghost"
                 onClick={clearChat}
-                className="text-muted-foreground h-10 w-10 p-0"
+                className="text-muted-foreground h-8 w-8 sm:h-10 sm:w-10 p-0"
                 title="Clear chat"
               >
-                <Trash2 className="h-6 w-6" />
+                <Trash2 className="h-4 w-4 sm:h-6 sm:w-6" />
                 <span className="sr-only">Clear</span>
               </Button>
             ) : (
-              <div className="w-10 h-10"></div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
             )}
           </div>
         </div>
@@ -367,7 +367,7 @@ export default function Chat() {
 
       {/* API Status Warning */}
       {apiStatus === 'unavailable' && (
-        <div className="px-4 md:px-6 lg:px-8 py-2">
+        <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-2">
           <Alert variant="destructive" className="max-w-3xl mx-auto">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Backend API Unavailable</AlertTitle>
@@ -381,7 +381,7 @@ export default function Chat() {
 
       {/* Alert */}
       {alert && (
-        <div className="px-4 md:px-6 lg:px-8 py-2">
+        <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-2">
           <Alert variant={alert.variant} className="max-w-3xl mx-auto">
             <AlertTitle>{alert.title}</AlertTitle>
             <AlertDescription>{alert.description}</AlertDescription>
@@ -398,8 +398,8 @@ export default function Chat() {
       )}
 
       <ScrollArea>
-        <div className="flex-grow overflow-y-auto px-4 md:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto mt-6 space-y-6 pb-6">
+        <div className="flex-grow overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto mt-4 sm:mt-6 space-y-4 sm:space-y-6 pb-4 sm:pb-6">
             {renderChatMessages()}
             <div ref={messagesEndRef} aria-hidden="true" />
           </div>
@@ -408,7 +408,7 @@ export default function Chat() {
 
       {/* AI Prompt Component */}
       <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
-        <div className="max-w-3xl mx-auto w-full px-2 py-2">
+        <div className="max-w-3xl mx-auto w-full px-1 sm:px-2 py-1 sm:py-2">
           <AI_Prompt 
             onSendMessage={handleSendMessage}
             isLoading={isLoading}

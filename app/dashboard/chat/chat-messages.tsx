@@ -59,13 +59,13 @@ export function ChatMessage({
   return (
     <article
       className={cn(
-        "flex items-start gap-4 text-[15px] leading-relaxed",
+        "flex items-start gap-2 sm:gap-4 text-[15px] leading-relaxed w-full",
         isUser && "justify-end"
       )}
     >
       <img
         className={cn(
-          "rounded-full",
+          "rounded-full flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10",
           isUser ? "order-1" : "border border-black/[0.08] shadow-sm"
         )}
         src={
@@ -79,15 +79,17 @@ export function ChatMessage({
       />
       <div
         className={cn(
-          "max-w-[80%]",
+          "flex-1 min-w-0 max-w-full",
+          // Mobile: Use more of the available width
+          "w-full sm:max-w-[80%]",
           isUser
-            ? "bg-muted px-4 py-3 rounded-xl"
+            ? "bg-muted px-3 py-2 sm:px-4 sm:py-3 rounded-xl"
             : isError
-            ? "bg-destructive/10 px-4 py-3 rounded-xl space-y-4"
-            : "space-y-4"
+            ? "bg-destructive/10 px-3 py-2 sm:px-4 sm:py-3 rounded-xl space-y-3 sm:space-y-4"
+            : "space-y-3 sm:space-y-4"
         )}
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 sm:gap-3">
           <p className="sr-only">
             {isUser ? "You" : isError ? "Error" : "Bart"} said:
           </p>
@@ -102,7 +104,7 @@ export function ChatMessage({
           {children}
 
           {media && media.length > 0 && (
-            <div className="mt-3 space-y-3">
+            <div className="mt-2 sm:mt-3 space-y-2 sm:space-y-3 w-full">
               {media.map((item, index) => (
                 <MediaRenderer key={index} media={item} />
               ))}
@@ -161,16 +163,16 @@ function ImagePreview({ media }: { media: MessageMedia }) {
 
   return (
     <>
-      <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
-        <div className="flex items-center gap-3">
+      <div className="bg-background rounded-lg p-2 sm:p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 w-full">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Image Icon */}
           <div className="flex-shrink-0">
-            <RiImageLine size={24} className="text-blue-500" />
+            <RiImageLine size={20} className="text-blue-500 sm:w-6 sm:h-6" />
           </div>
           
           {/* File Info */}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
+            <p className="text-xs sm:text-sm font-medium text-foreground truncate">
               {media.name || 'Image'}
             </p>
             {media.size && (
@@ -181,16 +183,16 @@ function ImagePreview({ media }: { media: MessageMedia }) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Preview Button */}
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
                     onClick={handlePreviewClick}
-                    className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                    className="text-muted-foreground hover:text-foreground p-1 sm:p-1.5 rounded-full transition-colors hover:bg-muted/50"
                   >
-                    <RiZoomInLine size={18} />
+                    <RiZoomInLine size={16} className="sm:w-[18px] sm:h-[18px]" />
                     <span className="sr-only">Preview image</span>
                   </button>
                 </TooltipTrigger>
@@ -204,9 +206,9 @@ function ImagePreview({ media }: { media: MessageMedia }) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={handleDownload}
-                    className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                    className="text-muted-foreground hover:text-foreground p-1 sm:p-1.5 rounded-full transition-colors hover:bg-muted/50"
                   >
-                    <RiDownloadLine size={18} />
+                    <RiDownloadLine size={16} className="sm:w-[18px] sm:h-[18px]" />
                     <span className="sr-only">Download image</span>
                   </button>
                 </TooltipTrigger>
@@ -219,7 +221,7 @@ function ImagePreview({ media }: { media: MessageMedia }) {
 
       {/* Image Preview Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-6xl w-[95vw] h-[95vh] p-0 bg-black/95 border-0 shadow-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-6xl w-[95vw] h-[95vh] p-0 bg-black/95 border-0 shadow-2xl">
           <DialogHeader className="sr-only">
             <DialogTitle>Image preview</DialogTitle>
           </DialogHeader>
@@ -229,28 +231,28 @@ function ImagePreview({ media }: { media: MessageMedia }) {
               variant="ghost"
               size="icon"
               onClick={() => setIsDialogOpen(false)}
-              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white border-white/20"
+              className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 bg-black/50 hover:bg-black/70 text-white border-white/20 w-8 h-8 sm:w-10 sm:h-10"
             >
-              <RiCloseLine size={20} />
+              <RiCloseLine size={16} className="sm:w-5 sm:h-5" />
             </Button>
             
             {/* Image */}
             <img
               src={media.url}
               alt={media.alt || media.name || "Image preview"}
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full object-contain p-2 sm:p-4"
             />
             
             {/* Download button */}
-            <div className="absolute bottom-4 right-4">
+            <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4">
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleDownload}
-                      className="inline-flex items-center justify-center h-10 w-10 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full transition-colors border border-white/20 text-white"
+                      className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full transition-colors border border-white/20 text-white"
                     >
-                      <RiDownloadLine size={16} />
+                      <RiDownloadLine size={14} className="sm:w-4 sm:h-4" />
                       <span className="sr-only">Download image</span>
                     </button>
                   </TooltipTrigger>
@@ -269,13 +271,13 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const getFileIcon = (fileName?: string) => {
-    if (!fileName) return <RiFileTextLine size={24} />;
+    if (!fileName) return <RiFileTextLine size={20} className="sm:w-6 sm:h-6" />;
     
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (extension === 'pdf') {
-      return <RiFilePdfLine size={24} className="text-red-500" />;
+      return <RiFilePdfLine size={20} className="text-red-500 sm:w-6 sm:h-6" />;
     }
-    return <RiFileTextLine size={24} />;
+    return <RiFileTextLine size={20} className="sm:w-6 sm:h-6" />;
   };
 
   const isPDF = media.name?.toLowerCase().endsWith('.pdf');
@@ -302,14 +304,14 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
 
   return (
     <>
-      <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
-        <div className="flex items-center gap-3">
+      <div className="bg-background rounded-lg p-2 sm:p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 w-full">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex-shrink-0">
             {getFileIcon(media.name)}
           </div>
           
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
+            <p className="text-xs sm:text-sm font-medium text-foreground truncate">
               {media.name || 'Document'}
             </p>
             {media.size && (
@@ -319,7 +321,7 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Preview Button (for PDFs) */}
             {isPDF && (
               <TooltipProvider delayDuration={0}>
@@ -327,9 +329,9 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
                   <TooltipTrigger asChild>
                     <button 
                       onClick={handlePreviewClick}
-                      className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                      className="text-muted-foreground hover:text-foreground p-1 sm:p-1.5 rounded-full transition-colors hover:bg-muted/50"
                     >
-                      <RiZoomInLine size={18} />
+                      <RiZoomInLine size={16} className="sm:w-[18px] sm:h-[18px]" />
                       <span className="sr-only">Preview document</span>
                     </button>
                   </TooltipTrigger>
@@ -344,9 +346,9 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={handleDownload}
-                    className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                    className="text-muted-foreground hover:text-foreground p-1 sm:p-1.5 rounded-full transition-colors hover:bg-muted/50"
                   >
-                    <RiDownloadLine size={18} />
+                    <RiDownloadLine size={16} className="sm:w-[18px] sm:h-[18px]" />
                     <span className="sr-only">Download document</span>
                   </button>
                 </TooltipTrigger>
@@ -360,23 +362,23 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
       {/* PDF Preview Dialog */}
       {isPDF && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-6xl w-[95vw] h-[95vh] p-0 bg-background border shadow-2xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-6xl w-[95vw] h-[95vh] p-0 bg-background border shadow-2xl">
             <DialogHeader className="sr-only">
               <DialogTitle>PDF preview</DialogTitle>
             </DialogHeader>
             <div className="relative w-full h-full flex flex-col">
               {/* Header with close and download */}
-              <div className="flex items-center justify-between p-4 border-b bg-muted/50">
-                <h3 className="text-lg font-semibold truncate">{media.name}</h3>
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between p-2 sm:p-4 border-b bg-muted/50">
+                <h3 className="text-sm sm:text-lg font-semibold truncate pr-2">{media.name}</h3>
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
                           onClick={handleDownload}
-                          className="inline-flex items-center justify-center h-9 w-9 hover:bg-muted rounded-full transition-colors"
+                          className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 hover:bg-muted rounded-full transition-colors"
                         >
-                          <RiDownloadLine size={16} />
+                          <RiDownloadLine size={14} className="sm:w-4 sm:h-4" />
                           <span className="sr-only">Download PDF</span>
                         </button>
                       </TooltipTrigger>
@@ -387,8 +389,9 @@ function DocumentPreview({ media }: { media: MessageMedia }) {
                     variant="ghost" 
                     size="icon"
                     onClick={() => setIsDialogOpen(false)}
+                    className="w-8 h-8 sm:w-9 sm:h-9"
                   >
-                    <RiCloseLine size={20} />
+                    <RiCloseLine size={16} className="sm:w-5 sm:h-5" />
                   </Button>
                 </div>
               </div>
@@ -464,21 +467,21 @@ function AudioPlayer({ media }: { media: MessageMedia }) {
   };
 
   return (
-    <div className="bg-background rounded-lg p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div className="bg-background rounded-lg p-2 sm:p-3 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 w-full">
       <audio ref={audioRef} src={media.url} className="hidden" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Audio Icon */}
         <div className="flex-shrink-0">
-          <RiVolumeUpLine size={24} className="text-green-500" />
+          <RiVolumeUpLine size={20} className="text-green-500 sm:w-6 sm:h-6" />
         </div>
         
         {/* File Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
+          <p className="text-xs sm:text-sm font-medium text-foreground truncate">
             {media.name || 'Audio'}
           </p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground">
             {media.size && <span>{formatFileSize(media.size)}</span>}
             {duration > 0 && (
               <>
@@ -490,16 +493,16 @@ function AudioPlayer({ media }: { media: MessageMedia }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* Play/Pause Button */}
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={togglePlayPause}
-                  className="bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition-colors"
+                  className="bg-primary text-primary-foreground rounded-full p-1.5 sm:p-2 hover:bg-primary/90 transition-colors"
                 >
-                  {isPlaying ? <RiPauseFill size={16} /> : <RiPlayFill size={16} />}
+                  {isPlaying ? <RiPauseFill size={14} className="sm:w-4 sm:h-4" /> : <RiPlayFill size={14} className="sm:w-4 sm:h-4" />}
                   <span className="sr-only">{isPlaying ? 'Pause' : 'Play'} audio</span>
                 </button>
               </TooltipTrigger>
@@ -513,9 +516,9 @@ function AudioPlayer({ media }: { media: MessageMedia }) {
               <TooltipTrigger asChild>
                 <button
                   onClick={handleDownload}
-                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-full transition-colors hover:bg-muted/50"
+                  className="text-muted-foreground hover:text-foreground p-1 sm:p-1.5 rounded-full transition-colors hover:bg-muted/50"
                 >
-                  <RiDownloadLine size={18} />
+                  <RiDownloadLine size={16} className="sm:w-[18px] sm:h-[18px]" />
                   <span className="sr-only">Download audio</span>
                 </button>
               </TooltipTrigger>
@@ -540,7 +543,7 @@ function ActionButton({ icon, label, onClick }: ActionButtonProps) {
       <TooltipTrigger asChild>
         <button
           onClick={onClick}
-          className="relative text-muted-foreground/80 hover:text-foreground transition-colors size-8 flex items-center justify-center before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-border first:before:hidden first-of-type:rounded-s-lg last-of-type:rounded-e-lg focus-visible:z-10 outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring/70"
+          className="relative text-muted-foreground/80 hover:text-foreground transition-colors size-7 sm:size-8 flex items-center justify-center before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-border first:before:hidden first-of-type:rounded-s-lg last-of-type:rounded-e-lg focus-visible:z-10 outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring/70"
         >
           {icon}
           <span className="sr-only">{label}</span>
@@ -557,10 +560,10 @@ function MessageActions() {
   return (
     <div className="relative inline-flex bg-white rounded-md border border-black/[0.08] shadow-sm -space-x-px">
       <TooltipProvider delayDuration={0}>
-        <ActionButton icon={<RiCodeSSlashLine size={16} />} label="Show code" />
-        <ActionButton icon={<RiBookLine size={16} />} label="Bookmark" />
-        <ActionButton icon={<RiLoopRightFill size={16} />} label="Refresh" />
-        <ActionButton icon={<RiCheckLine size={16} />} label="Approve" />
+        <ActionButton icon={<RiCodeSSlashLine size={14} className="sm:w-4 sm:h-4" />} label="Show code" />
+        <ActionButton icon={<RiBookLine size={14} className="sm:w-4 sm:h-4" />} label="Bookmark" />
+        <ActionButton icon={<RiLoopRightFill size={14} className="sm:w-4 sm:h-4" />} label="Refresh" />
+        <ActionButton icon={<RiCheckLine size={14} className="sm:w-4 sm:h-4" />} label="Approve" />
       </TooltipProvider>
     </div>
   );
