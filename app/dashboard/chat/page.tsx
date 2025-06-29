@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sparkles,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateText, processPrompt } from "@/lib/api";
@@ -42,6 +43,7 @@ export default function Chat() {
   const [isRecording, setIsRecording] = useState(false);
   const [sourceLang, setSourceLang] = useState<string>("tel");
   const [targetLang, setTargetLang] = useState<string>("eng");
+  const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -54,6 +56,24 @@ export default function Chat() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // Check API status on component mount
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+        const response = await fetch(`${API_BASE_URL}/health`, {
+          method: "GET",
+          signal: AbortSignal.timeout(5000),
+        });
+        setApiStatus(response.ok ? 'available' : 'unavailable');
+      } catch (error) {
+        setApiStatus('unavailable');
+      }
+    };
+
+    checkApiStatus();
+  }, []);
 
   const convertBlobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -70,6 +90,16 @@ export default function Chat() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() && selectedImages.length === 0 && !selectedAudio) return;
+
+    // Check if API is available before proceeding
+    if (apiStatus === 'unavailable') {
+      setAlert({
+        title: "API Server Unavailable",
+        description: "The backend API server is not running or accessible. Please ensure the server is started and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -161,23 +191,24 @@ export default function Chat() {
         setMessages((prev) => [...prev, errorMessage]);
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "An unexpected error occurred.";
+      
       setAlert({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
+        title: "Connection Error",
+        description: errorMsg,
         variant: "destructive",
       });
 
       const errorMessage: Message = {
         role: "error",
-        content:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
+        content: errorMsg,
       };
       setMessages((prev) => [...prev, errorMessage]);
+
+      // Update API status if connection failed
+      if (errorMsg.includes("Unable to connect") || errorMsg.includes("API server is not available")) {
+        setApiStatus('unavailable');
+      }
     } finally {
       setIsLoading(false);
       setSelectedAudio(null);
@@ -280,6 +311,18 @@ export default function Chat() {
           <div className="flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-semibold">translations.aiAssistant</h1>
+            {/* API Status Indicator */}
+            <div className="flex items-center gap-1">
+              {apiStatus === 'checking' && (
+                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Checking API status..." />
+              )}
+              {apiStatus === 'available' && (
+                <div className="w-2 h-2 bg-green-500 rounded-full" title="API server is available" />
+              )}
+              {apiStatus === 'unavailable' && (
+                <div className="w-2 h-2 bg-red-500 rounded-full" title="API server is unavailable" />
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-center">
@@ -299,6 +342,20 @@ export default function Chat() {
           </div>
         </div>
       </div>
+
+      {/* API Status Warning */}
+      {apiStatus === 'unavailable' && (
+        <div className="px-4 md:px-6 lg:px-8 py-2">
+          <Alert variant="destructive" className="max-w-3xl mx-auto">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Backend API Unavailable</AlertTitle>
+            <AlertDescription>
+              The backend API server is not running or accessible. Please ensure the server is started on{" "}
+              {process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"} and refresh the page.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Alert */}
       {alert && (
