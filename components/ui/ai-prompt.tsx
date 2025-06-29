@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bot, Check, ChevronDown, Paperclip, ChevronRight, Circle } from "lucide-react";
+import { ArrowRight, Bot, Check, ChevronDown, Paperclip, ChevronRight, Circle, X, FileText, Music, Video, Image, Mic, MicOff, Volume2, VolumeX, Loader2, Play, Pause } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -358,6 +358,456 @@ const OPENAI_ICON = (
     </>
 );
 
+interface UploadedFile {
+    id: string;
+    file: File;
+    type: 'audio' | 'document' | 'image' | 'video';
+    preview?: string;
+    audioUrl?: string;
+}
+
+interface AudioRecording {
+    id: string;
+    blob: Blob;
+    duration: number;
+    timestamp: Date;
+}
+
+interface VoiceRecorderProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onRecordingComplete: (recording: AudioRecording) => void;
+}
+
+interface AudioPreviewProps {
+    file: UploadedFile;
+    isRecording?: AudioRecording;
+    onRemove: () => void;
+}
+
+function AudioPreview({ file, isRecording, onRemove }: AudioPreviewProps) {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const audioRef = useRef<HTMLAudioElement>(null);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio || !file.audioUrl) return;
+
+        const handleEnded = () => setIsPlaying(false);
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, [file.audioUrl]);
+
+    const togglePlayPause = () => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        if (isPlaying) {
+            audio.pause();
+            setIsPlaying(false);
+        } else {
+            audio.play();
+            setIsPlaying(true);
+        }
+    };
+
+    return (
+        <>
+            <audio ref={audioRef} src={file.audioUrl} preload="metadata" />
+            
+            <div className="flex items-center gap-2 w-full">
+                <div className="w-8 h-8 rounded bg-black/10 dark:bg-white/10 flex items-center justify-center">
+                    <Music className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-xs text-black/50 dark:text-white/50">
+                        {formatFileSize(file.file.size)}
+                    </p>
+                </div>
+                <button
+                    onClick={togglePlayPause}
+                    className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+                    aria-label={isPlaying ? "Stop" : "Play"}
+                >
+                    {isPlaying ? (
+                        <Pause className="w-4 h-4 text-black/70 dark:text-white/70" />
+                    ) : (
+                        <Play className="w-4 h-4 text-black/70 dark:text-white/70" />
+                    )}
+                </button>
+                <button
+                    onClick={onRemove}
+                    className="w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                    aria-label="Remove file"
+                >
+                    <X className="w-4 h-4 text-white" />
+                </button>
+            </div>
+        </>
+    );
+}
+
+function VoiceRecorder({ isOpen, onClose, onRecordingComplete }: VoiceRecorderProps) {
+    const [isRecording, setIsRecording] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [duration, setDuration] = useState(0);
+    const [volume, setVolume] = useState(0);
+    const [waveformData, setWaveformData] = useState<number[]>(Array(32).fill(0));
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const intervalRef = useRef<NodeJS.Timeout>();
+    const animationRef = useRef<number>();
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+
+    useEffect(() => {
+        if (isRecording) {
+            intervalRef.current = setInterval(() => {
+                setDuration(prev => prev + 1);
+            }, 1000);
+
+            // Start audio analysis for waveform
+            if (analyserRef.current) {
+                const updateWaveform = () => {
+                    const dataArray = new Uint8Array(analyserRef.current!.frequencyBinCount);
+                    analyserRef.current!.getByteFrequencyData(dataArray);
+                    
+                    const waveform = Array(32).fill(0).map((_, i) => {
+                        const index = Math.floor((i / 32) * dataArray.length);
+                        return (dataArray[index] / 255) * 100;
+                    });
+                    
+                    setWaveformData(waveform);
+                    setVolume(Math.max(...waveform));
+                    
+                    if (isRecording) {
+                        animationRef.current = requestAnimationFrame(updateWaveform);
+                    }
+                };
+                updateWaveform();
+            }
+        } else {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+            }
+            setWaveformData(Array(32).fill(0));
+            setVolume(0);
+        }
+
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        };
+    }, [isRecording]);
+
+        const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                } 
+            });
+            
+            // Setup audio context for visualization
+            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            analyserRef.current = audioContextRef.current.createAnalyser();
+            const source = audioContextRef.current.createMediaStreamSource(stream);
+            source.connect(analyserRef.current);
+            analyserRef.current.fftSize = 256;
+
+            // Check for supported MIME types
+            const mimeTypes = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/mp4',
+                'audio/wav'
+            ];
+            
+            let selectedMimeType = 'audio/wav';
+            for (const mimeType of mimeTypes) {
+                if (MediaRecorder.isTypeSupported(mimeType)) {
+                    selectedMimeType = mimeType;
+                    break;
+                }
+            }
+
+            mediaRecorderRef.current = new MediaRecorder(stream, {
+                mimeType: selectedMimeType
+            });
+            audioChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: selectedMimeType });
+                const recording: AudioRecording = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    blob: audioBlob,
+                    duration,
+                    timestamp: new Date()
+                };
+                onRecordingComplete(recording);
+                
+                // Cleanup
+                stream.getTracks().forEach(track => track.stop());
+                if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                    audioContextRef.current.close();
+                }
+            };
+
+            mediaRecorderRef.current.onerror = (event) => {
+                console.error('MediaRecorder error:', event);
+                setIsRecording(false);
+                setIsProcessing(false);
+            };
+
+            mediaRecorderRef.current.start(100); // Collect data every 100ms
+            setIsRecording(true);
+        } catch (error) {
+            console.error('Error starting recording:', error);
+            alert('Could not access microphone. Please check permissions.');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            setIsRecording(false);
+            setIsProcessing(true);
+            mediaRecorderRef.current.stop();
+            
+            setTimeout(() => {
+                setIsProcessing(false);
+                setDuration(0);
+                onClose();
+            }, 1000);
+        }
+    };
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    };
+
+    const getStatusText = () => {
+        if (isProcessing) return "Processing...";
+        if (isRecording) return "Recording...";
+        return "Tap to start recording";
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+        >
+            <motion.div
+                className="bg-black/90 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full mx-4 relative overflow-hidden"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Background effects */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <motion.div
+                        className="absolute top-1/2 left-1/2 w-96 h-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 blur-3xl"
+                        animate={{
+                            scale: isRecording ? [1, 1.2, 1] : [1, 1.1, 1],
+                            opacity: isRecording ? [0.3, 0.6, 0.3] : [0.1, 0.2, 0.1]
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                    />
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center space-y-6">
+                    {/* Close button */}
+                    <button
+                        onClick={onClose}
+                        className="absolute -top-2 -right-2 p-2 text-white/60 hover:text-white transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+
+                    {/* Main recording button */}
+                    <motion.div className="relative">
+                        <motion.button
+                            onClick={isRecording ? stopRecording : startRecording}
+                            disabled={isProcessing}
+                            className={cn(
+                                "relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300",
+                                "bg-gradient-to-br from-white/20 to-white/10 border-2",
+                                isRecording ? "border-red-500 shadow-lg shadow-red-500/25" :
+                                isProcessing ? "border-yellow-500 shadow-lg shadow-yellow-500/25" :
+                                "border-white/20 hover:border-white/40"
+                            )}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            animate={{
+                                boxShadow: isRecording 
+                                    ? ["0 0 0 0 rgba(239, 68, 68, 0.4)", "0 0 0 20px rgba(239, 68, 68, 0)"]
+                                    : undefined
+                            }}
+                            transition={{
+                                duration: 1.5,
+                                repeat: isRecording ? Infinity : 0
+                            }}
+                        >
+                            <AnimatePresence mode="wait">
+                                {isProcessing ? (
+                                    <motion.div
+                                        key="processing"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                    >
+                                        <Loader2 className="w-8 h-8 text-yellow-400 animate-spin" />
+                                    </motion.div>
+                                ) : isRecording ? (
+                                    <motion.div
+                                        key="recording"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                    >
+                                        <div className="w-6 h-6 bg-red-500 rounded-sm" />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="idle"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                    >
+                                        <Mic className="w-8 h-8 text-white" />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.button>
+
+                        {/* Pulse rings */}
+                        <AnimatePresence>
+                            {isRecording && (
+                                <>
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full border-2 border-red-500/30"
+                                        initial={{ scale: 1, opacity: 0.6 }}
+                                        animate={{ scale: 1.5, opacity: 0 }}
+                                        transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                            ease: "easeOut"
+                                        }}
+                                    />
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full border-2 border-red-500/20"
+                                        initial={{ scale: 1, opacity: 0.4 }}
+                                        animate={{ scale: 2, opacity: 0 }}
+                                        transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                            ease: "easeOut",
+                                            delay: 0.5
+                                        }}
+                                    />
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+
+                    {/* Waveform visualizer */}
+                    <div className="flex items-center justify-center space-x-1 h-12">
+                        {waveformData.map((height, index) => (
+                            <motion.div
+                                key={index}
+                                className={cn(
+                                    "w-1 rounded-full transition-colors duration-300",
+                                    isRecording ? "bg-red-500" :
+                                    isProcessing ? "bg-yellow-500" :
+                                    "bg-white/30"
+                                )}
+                                animate={{
+                                    height: `${Math.max(4, height * 0.4)}px`,
+                                    opacity: isRecording ? 1 : 0.3
+                                }}
+                                transition={{
+                                    duration: 0.1,
+                                    ease: "easeOut"
+                                }}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Status and timer */}
+                    <div className="text-center space-y-2">
+                        <motion.p
+                            className={cn(
+                                "text-lg font-medium transition-colors",
+                                isRecording ? "text-red-400" :
+                                isProcessing ? "text-yellow-400" :
+                                "text-white/70"
+                            )}
+                            animate={{ opacity: [1, 0.7, 1] }}
+                            transition={{
+                                duration: 2,
+                                repeat: isRecording || isProcessing ? Infinity : 0
+                            }}
+                        >
+                            {getStatusText()}
+                        </motion.p>
+                        
+                        <p className="text-sm text-white/50 font-mono">
+                            {formatTime(duration)}
+                        </p>
+
+                        {volume > 0 && (
+                            <motion.div
+                                className="flex items-center justify-center space-x-2"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                            >
+                                <VolumeX className="w-4 h-4 text-white/50" />
+                                <div className="w-24 h-2 bg-white/20 rounded-full overflow-hidden">
+                                    <motion.div
+                                        className="h-full bg-red-500 rounded-full"
+                                        animate={{ width: `${volume}%` }}
+                                        transition={{ duration: 0.1 }}
+                                    />
+                                </div>
+                                <Volume2 className="w-4 h-4 text-white/50" />
+                            </motion.div>
+                        )}
+                    </div>
+
+                    <p className="text-xs text-white/40 text-center">
+                        {isRecording ? "Tap the button to stop recording" : "Tap the microphone to start recording"}
+                    </p>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
 export function AI_Prompt() {
     const [value, setValue] = useState("");
     const { textareaRef, adjustHeight } = useAutoResizeTextarea({
@@ -365,6 +815,11 @@ export function AI_Prompt() {
         maxHeight: 300,
     });
     const [selectedModel, setSelectedModel] = useState("GPT-4-1 Mini");
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [isVoiceRecorderOpen, setIsVoiceRecorderOpen] = useState(false);
+    const [audioRecordings, setAudioRecordings] = useState<AudioRecording[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const AI_MODELS = [
         "o3-mini",
@@ -434,31 +889,218 @@ export function AI_Prompt() {
         "GPT-4-1": OPENAI_ICON,
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === "Enter" && !e.shiftKey && value.trim()) {
+        const getFileType = (file: File): 'audio' | 'document' | 'image' | 'video' => {
+        const type = file.type;
+        if (type.startsWith('audio/')) return 'audio';
+        if (type.startsWith('image/')) return 'image';
+        if (type.startsWith('video/')) return 'video';
+        return 'document';
+    };
+
+    const getFileIcon = (type: 'audio' | 'document' | 'image' | 'video') => {
+        switch (type) {
+            case 'audio': return <Music className="w-4 h-4" />;
+            case 'image': return <Image className="w-4 h-4" />;
+            case 'video': return <Video className="w-4 h-4" />;
+            default: return <FileText className="w-4 h-4" />;
+        }
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+        const handleFileUpload = (files: FileList | null) => {
+        if (!files) return;
+
+                Array.from(files).forEach(file => {
+            const fileType = getFileType(file);
+            const newFile: UploadedFile = {
+                id: Math.random().toString(36).substr(2, 9),
+                file,
+                type: fileType,
+            };
+
+            // Create preview for images
+            if (fileType === 'image') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setUploadedFiles(prev => prev.map(f => 
+                        f.id === newFile.id ? { ...f, preview: e.target?.result as string } : f
+                    ));
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Create audio URL for audio files
+            if (fileType === 'audio') {
+                const audioUrl = URL.createObjectURL(file);
+                newFile.audioUrl = audioUrl;
+            }
+
+            setUploadedFiles(prev => [...prev, newFile]);
+        });
+    };
+
+        const handleRecordingComplete = (recording: AudioRecording) => {
+        setAudioRecordings(prev => [...prev, recording]);
+        
+        // Convert recording to file and add to uploaded files
+        const audioFile = new File([recording.blob], `recording-${recording.id}.wav`, {
+            type: recording.blob.type || 'audio/wav'
+        });
+        
+        // Create audio URL for playback
+        const audioUrl = URL.createObjectURL(recording.blob);
+        
+        const newFile: UploadedFile = {
+            id: recording.id,
+            file: audioFile,
+            type: 'audio',
+            audioUrl: audioUrl
+        };
+        
+        setUploadedFiles(prev => [...prev, newFile]);
+    };
+
+    const removeAudioRecording = (recordingId: string) => {
+        setAudioRecordings(prev => prev.filter(r => r.id !== recordingId));
+        removeFile(recordingId);
+    };
+
+        const removeFile = (fileId: string) => {
+        setUploadedFiles(prev => {
+            const fileToRemove = prev.find(f => f.id === fileId);
+            if (fileToRemove?.audioUrl) {
+                URL.revokeObjectURL(fileToRemove.audioUrl);
+            }
+            return prev.filter(f => f.id !== fileId);
+        });
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        handleFileUpload(e.dataTransfer.files);
+    };
+
+        const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === "Enter" && !e.shiftKey && (value.trim() || uploadedFiles.length > 0)) {
             e.preventDefault();
             setValue("");
+            setUploadedFiles([]);
+            setAudioRecordings([]);
             adjustHeight(true);
             // Here you can add message sending     
         }
     };
 
     return (
-        <div className="w-full py-4">
+        <div className="w-4/6 py-4">
             <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
                 <div className="relative">
                     <div className="relative flex flex-col">
-                        <div
+                                                <div
                             className="overflow-y-auto"
                             style={{ maxHeight: "400px" }}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
                         >
+                            {/* File Previews */}
+                            <AnimatePresence>
+                                {uploadedFiles.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="px-4 pt-3 pb-2"
+                                    >
+                                                                                <div className="flex flex-wrap gap-2">
+                                            {uploadedFiles.map((file) => {
+                                                const isAudioRecording = audioRecordings.find(r => r.id === file.id);
+                                                
+                                                return (
+                                                    <motion.div
+                                                        key={file.id}
+                                                        initial={{ opacity: 0, scale: 0.8 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.8 }}
+                                                        className={cn(
+                                                            "bg-black/10 dark:bg-white/10 rounded-lg p-2",
+                                                            file.type === 'audio' ? "max-w-sm" : "max-w-xs",
+                                                            file.type === 'audio' ? "flex flex-col gap-2" : "flex items-center gap-2"
+                                                        )}
+                                                    >
+                                                                                                                {file.type === 'audio' ? (
+                                                            <AudioPreview
+                                                                file={file}
+                                                                isRecording={isAudioRecording}
+                                                                onRemove={() => isAudioRecording ? removeAudioRecording(file.id) : removeFile(file.id)}
+                                                            />
+                                                        ) : (
+                                                            <>
+                                                                {file.type === 'image' && file.preview ? (
+                                                                    <img
+                                                                        src={file.preview}
+                                                                        alt={file.file.name}
+                                                                        className="w-8 h-8 rounded object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-8 h-8 rounded bg-black/10 dark:bg-white/10 flex items-center justify-center">
+                                                                        {getFileIcon(file.type)}
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    {file.type !== 'image' && (
+                                                                        <p className="text-xs font-medium truncate dark:text-white">
+                                                                            {file.file.name}
+                                                                        </p>
+                                                                    )}
+                                                                    <p className="text-xs text-black/50 dark:text-white/50">
+                                                                        {formatFileSize(file.file.size)}
+                                                                    </p>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => removeFile(file.id)}
+                                                                    className="w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                                                                    aria-label="Remove file"
+                                                                >
+                                                                    <X className="w-4 h-4 text-white" />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             <Textarea
                                 id="ai-input-15"
                                 value={value}
-                                placeholder={"What can I do for you?"}
+                                placeholder={uploadedFiles.length > 0 ? "Add a message..." : "What can I do for you?"}
                                 className={cn(
-                                    "w-full rounded-xl rounded-b-none px-4 py-3 bg-black/5 dark:bg-white/5 border-none dark:text-white placeholder:text-black/70 dark:placeholder:text-white/70 resize-none focus-visible:ring-0 focus-visible:ring-offset-0",
-                                    "min-h-[72px]"
+                                    "w-full px-4 py-3 bg-black/5 dark:bg-white/5 border-none dark:text-white placeholder:text-black/70 dark:placeholder:text-white/70 resize-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                                    "min-h-[72px]",
+                                    uploadedFiles.length > 0 ? "rounded-none" : "rounded-xl rounded-b-none",
+                                    isDragOver && "bg-blue-50 dark:bg-blue-950/20 border-2 border-dashed border-blue-300 dark:border-blue-600"
                                 )}
                                 ref={textareaRef}
                                 onKeyDown={handleKeyDown}
@@ -539,7 +1181,7 @@ export function AI_Prompt() {
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                     <div className="h-4 w-px bg-black/10 dark:bg-white/10 mx-0.5" />
-                                    <label
+                                                                        <label
                                         className={cn(
                                             "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
                                             "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
@@ -547,9 +1189,27 @@ export function AI_Prompt() {
                                         )}
                                         aria-label="Attach file"
                                     >
-                                        <input type="file" className="hidden" />
-                                        <Paperclip className="w-4 h-4 transition-colors" />
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            className="hidden"
+                                            multiple
+                                            accept="audio/*,video/*,image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx"
+                                            onChange={(e) => handleFileUpload(e.target.files)}
+                                        />
+                                                                                <Paperclip className="w-4 h-4 transition-colors" />
                                     </label>
+                                    <button
+                                        onClick={() => setIsVoiceRecorderOpen(true)}
+                                        className={cn(
+                                            "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
+                                            "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
+                                            "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                                        )}
+                                        aria-label="Record voice message"
+                                    >
+                                        <Mic className="w-4 h-4 transition-colors" />
+                                    </button>
                                 </div>
                                 <button
                                     type="button"
@@ -558,18 +1218,20 @@ export function AI_Prompt() {
                                         "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
                                     )}
                                     aria-label="Send message"
-                                    disabled={!value.trim()}
-                                    onClick={() => {
-                                        if (!value.trim()) return;
+                                                                        disabled={!value.trim() && uploadedFiles.length === 0}
+                                                                        onClick={() => {
+                                        if (!value.trim() && uploadedFiles.length === 0) return;
                                         setValue("");
+                                        setUploadedFiles([]);
+                                        setAudioRecordings([]);
                                         adjustHeight(true);
                                         // Here you can add message sending
                                     }}
                                 >
-                                    <ArrowRight
+                                                                        <ArrowRight
                                         className={cn(
                                             "w-4 h-4 dark:text-white transition-opacity duration-200",
-                                            value.trim()
+                                            (value.trim() || uploadedFiles.length > 0)
                                                 ? "opacity-100"
                                                 : "opacity-30"
                                         )}
@@ -578,11 +1240,22 @@ export function AI_Prompt() {
                             </div>
                         </div>
                     </div>
-                </div>
+                                </div>
             </div>
+            
+            <AnimatePresence>
+                {isVoiceRecorderOpen && (
+                    <VoiceRecorder
+                        isOpen={isVoiceRecorderOpen}
+                        onClose={() => setIsVoiceRecorderOpen(false)}
+                        onRecordingComplete={handleRecordingComplete}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
+
 
 export default function AI_Prompt_Demo() {
     return <AI_Prompt />;

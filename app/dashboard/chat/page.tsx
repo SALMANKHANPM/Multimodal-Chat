@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Sparkles,
   Trash2,
@@ -23,6 +22,7 @@ import {
 } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
+import { AI_Prompt } from "@/components/ui/ai-prompt";
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -326,6 +326,13 @@ export default function Chat() {
           </div>
         </div>
       </ScrollArea>
+
+      {/* Enhanced AI Prompt at the bottom */}
+      <div className="sticky bottom-0 left-0 right-0 z-10 bg-background border-t mt-auto">
+        <div className="max-w-3xl mx-auto w-full px-4 md:px-6 lg:px-8 py-4">
+          <AI_Prompt />
+        </div>
+      </div>
     </div>
   );
 }
