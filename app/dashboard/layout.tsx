@@ -14,7 +14,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        {/* <SiteHeader /> */}
         <div className="mx-auto w-full h-full">{children}</div>
       </SidebarInset>
     </SidebarProvider>

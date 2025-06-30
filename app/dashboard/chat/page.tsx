@@ -3,13 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import {
-  Sparkles,
-  Trash2,
-  AlertTriangle,
-} from "lucide-react";
+import { Sparkles, Trash2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateText, processPrompt } from "@/lib/api";
+
+import { SiteHeader } from "@/components/sidebar/site-header";
 import {
   LLMResponse,
   Message,
@@ -18,9 +16,7 @@ import {
   TranscriptionResponse,
 } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  RiShining2Line,
-} from "@remixicon/react";
+import { RiShining2Line } from "@remixicon/react";
 import { ChatMessage } from "./chat-messages";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { AI_Prompt } from "@/components/ui/ai-prompt";
@@ -29,7 +25,7 @@ import { AI_Prompt } from "@/components/ui/ai-prompt";
 interface UploadedFile {
   id: string;
   file: File;
-  type: 'audio' | 'document' | 'image' | 'video';
+  type: "audio" | "document" | "image" | "video";
   preview?: string;
   audioUrl?: string;
 }
@@ -47,7 +43,9 @@ export default function Chat() {
   } | null>(null);
   const [sourceLang, setSourceLang] = useState<string>("tel");
   const [targetLang, setTargetLang] = useState<string>("eng");
-  const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [apiStatus, setApiStatus] = useState<
+    "checking" | "available" | "unavailable"
+  >("checking");
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -65,14 +63,16 @@ export default function Chat() {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+        const API_BASE_URL =
+          process.env.NEXT_PUBLIC_API_BASE_URL ||
+          "https://w7kcdj7s-8001.inc1.devtunnels.ms:8001/";
         const response = await fetch(`${API_BASE_URL}/health`, {
           method: "GET",
           signal: AbortSignal.timeout(5000),
         });
-        setApiStatus(response.ok ? 'available' : 'unavailable');
+        setApiStatus(response.ok ? "available" : "unavailable");
       } catch (error) {
-        setApiStatus('unavailable');
+        setApiStatus("unavailable");
       }
     };
 
@@ -91,7 +91,10 @@ export default function Chat() {
     });
   };
 
-  const handleSendMessage = async (messageText: string, files?: UploadedFile[]) => {
+  const handleSendMessage = async (
+    messageText: string,
+    files?: UploadedFile[]
+  ) => {
     // Don't send empty messages without files
     if (!messageText.trim() && (!files || files.length === 0)) return;
 
@@ -105,31 +108,31 @@ export default function Chat() {
 
     // Process files and create preview URLs
     if (files && files.length > 0) {
-      files.forEach(file => {
-        if (file.type === 'image' && file.preview) {
+      files.forEach((file) => {
+        if (file.type === "image" && file.preview) {
           messageMedia.push({
-            type: 'image',
+            type: "image",
             url: file.preview,
             name: file.file.name,
-            size: file.file.size
+            size: file.file.size,
           });
-        } else if (file.type === 'audio') {
+        } else if (file.type === "audio") {
           // Create audio URL from the file if not already available
           const audioUrl = file.audioUrl || URL.createObjectURL(file.file);
           messageMedia.push({
-            type: 'audio',
+            type: "audio",
             url: audioUrl,
             name: file.file.name,
-            size: file.file.size
+            size: file.file.size,
           });
-        } else if (file.type === 'document') {
+        } else if (file.type === "document") {
           // Create document URL for download
           const documentUrl = URL.createObjectURL(file.file);
           messageMedia.push({
-            type: 'document',
+            type: "document",
             url: documentUrl,
             name: file.file.name,
-            size: file.file.size
+            size: file.file.size,
           });
         }
       });
@@ -144,10 +147,11 @@ export default function Chat() {
     setMessages((prev) => [...prev, newMessage]);
 
     // If API is unavailable, show a message but don't prevent the user message from appearing
-    if (apiStatus === 'unavailable') {
+    if (apiStatus === "unavailable") {
       const errorMessage: Message = {
         role: "error",
-        content: "API server is unavailable. Your message has been saved but cannot be processed right now. Please ensure the backend service is running and try again.",
+        content:
+          "API server is unavailable. Your message has been saved but cannot be processed right now. Please ensure the backend service is running and try again.",
       };
       setMessages((prev) => [...prev, errorMessage]);
       return;
@@ -162,7 +166,7 @@ export default function Chat() {
       };
 
       // Handle image files
-      const imageFiles = files?.filter(f => f.type === 'image');
+      const imageFiles = files?.filter((f) => f.type === "image");
       if (imageFiles && imageFiles.length > 0) {
         try {
           // Convert the file directly to base64
@@ -174,7 +178,7 @@ export default function Chat() {
       }
 
       // Handle audio files
-      const audioFiles = files?.filter(f => f.type === 'audio');
+      const audioFiles = files?.filter((f) => f.type === "audio");
       if (audioFiles && audioFiles.length > 0) {
         try {
           const base64Audio = await convertBlobToBase64(audioFiles[0].file);
@@ -184,7 +188,10 @@ export default function Chat() {
         }
       }
 
-      const result = (await processPrompt(messageText, options)) as ProcessResponse;
+      const result = (await processPrompt(
+        messageText,
+        options
+      )) as ProcessResponse;
 
       if (result.status === "success") {
         if (audioFiles && audioFiles.length > 0) {
@@ -245,8 +252,11 @@ export default function Chat() {
         setMessages((prev) => [...prev, errorMessage]);
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "An unexpected error occurred.";
-      
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred.";
+
       setAlert({
         title: "Connection Error",
         description: errorMsg,
@@ -260,8 +270,11 @@ export default function Chat() {
       setMessages((prev) => [...prev, errorMessage]);
 
       // Update API status if connection failed
-      if (errorMsg.includes("Unable to connect") || errorMsg.includes("API server is not available")) {
-        setApiStatus('unavailable');
+      if (
+        errorMsg.includes("Unable to connect") ||
+        errorMsg.includes("API server is not available")
+      ) {
+        setApiStatus("unavailable");
       }
     } finally {
       setIsLoading(false);
@@ -326,23 +339,36 @@ export default function Chat() {
   };
 
   return (
-    <div className="sticky top-0 w-full h-full flex flex-col shadow-md md:rounded-s-[inherit] min-[1024px]:rounded-e-3xl bg-background">
+    <div className="sticky top-0 w-full h-full flex flex-col shadow-md rounded-xl">
       {/* Header */}
       <div className="py-5 sticky bg-background top-0 z-10 px-4 md:px-6 lg:px-8 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-black/[0.06] before:via-black/10 before:to-black/[0.06]">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">translations.aiAssistant</h1>
+            <SiteHeader />
+            <Sparkles className=" h-5 w-5" />
+            {/* <h1 className="text-xl font-semibold">translations.aiAssistant</h1> */}
+            <h1 className="text-xl font-semibold text-primary italic">
+              Chat Assistant
+            </h1>
             {/* API Status Indicator */}
             <div className="flex items-center gap-1">
-              {apiStatus === 'checking' && (
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Checking API status..." />
+              {apiStatus === "checking" && (
+                <div
+                  className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"
+                  title="Checking API status..."
+                />
               )}
-              {apiStatus === 'available' && (
-                <div className="w-2 h-2 bg-green-500 rounded-full" title="API server is available" />
+              {apiStatus === "available" && (
+                <div
+                  className="w-2 h-2 bg-green-500 rounded-full"
+                  title="API server is available"
+                />
               )}
-              {apiStatus === 'unavailable' && (
-                <div className="w-2 h-2 bg-red-500 rounded-full" title="API server is unavailable" />
+              {apiStatus === "unavailable" && (
+                <div
+                  className="w-2 h-2 bg-red-500 rounded-full"
+                  title="API server is unavailable"
+                />
               )}
             </div>
           </div>
@@ -364,35 +390,12 @@ export default function Chat() {
           </div>
         </div>
       </div>
-
       {/* API Status Warning */}
-      {apiStatus === 'unavailable' && (
+      {apiStatus === "unavailable" && (
         <div className="px-4 md:px-6 lg:px-8 py-2">
           <Alert variant="destructive" className="max-w-3xl mx-auto">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Backend API Unavailable</AlertTitle>
-            <AlertDescription>
-              The backend API server is not running or accessible. You can still send messages, but they won't be processed until the server is available at{" "}
-              {process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}.
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-
-      {/* Alert */}
-      {alert && (
-        <div className="px-4 md:px-6 lg:px-8 py-2">
-          <Alert variant={alert.variant} className="max-w-3xl mx-auto">
-            <AlertTitle>{alert.title}</AlertTitle>
-            <AlertDescription>{alert.description}</AlertDescription>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAlert(null)}
-              className="absolute top-2 right-2"
-            >
-              ×
-            </Button>
           </Alert>
         </div>
       )}
@@ -408,11 +411,8 @@ export default function Chat() {
 
       {/* AI Prompt Component */}
       <div className="sticky bottom-0 left-0 right-0 z-10 mt-auto">
-        <div className="max-w-3xl mx-auto w-full px-2 py-2">
-          <AI_Prompt 
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-          />
+        <div className="max-w-3xl mx-auto w-full px-2 py-[-2">
+          <AI_Prompt onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>
     </div>

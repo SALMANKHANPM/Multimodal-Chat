@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import { RiRobot2Fill, RiRobot2Line, RiRobotFill } from "@remixicon/react";
 
 import {
@@ -23,12 +23,13 @@ import {
   IconWriting,
   IconPencilQuestion,
   Icon,
-} from "@tabler/icons-react"
+  IconUser,
+} from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/sidebar/nav-documents"
-import { NavMain } from "@/components/sidebar/nav-main"
-import { NavSecondary } from "@/components/sidebar/nav-secondary"
-import { NavUser } from "@/components/sidebar/nav-user"
+import { NavDocuments } from "@/components/sidebar/nav-documents";
+import { NavMain } from "@/components/sidebar/nav-main";
+import { NavSecondary } from "@/components/sidebar/nav-secondary";
+import { NavUser } from "@/components/sidebar/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -38,33 +39,42 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+  useSidebar,
+} from "@/components/ui/sidebar";
 
-import  NavbarLogo  from "@/components/logos/NavBarLogo";
+import NavbarLogo from "@/components/logos/NavBarLogo";
 import { Separator } from "../ui/separator";
+import { Profile } from "@/components/profile-utils";
 
 // Define the NavItem type
 type NavItem = {
-  title: string
-  url: string
-  icon?: Icon
-  status?: "new" | "wip" | "down"
-}
+  title: string;
+  url: string;
+  icon?: Icon;
+  status?: "new" | "wip" | "down";
+};
 
 // Then update your data object to use this type
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "admin",
+    email: "admin@klug.com",
+    avatar: "/avatars/admin.png",
   },
 
+  navProfile: [
+    {
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: IconUser,
+    },
+  ],
   navHome: [
     {
       title: "Dashboard",
       url: "/dashboard",
       icon: IconDashboard,
-      status: "new"
+      status: "new",
     },
   ] as NavItem[],
 
@@ -73,7 +83,7 @@ const data = {
       title: "Chat Now",
       url: "/dashboard/chat",
       icon: RiRobot2Line,
-      status: "wip"
+      status: "wip",
     },
   ] as NavItem[],
 
@@ -82,22 +92,20 @@ const data = {
       title: "Text Matching",
       url: "/dashboard/practice/textMatching",
       icon: IconLanguage,
-      status: "wip"
-      
-
+      status: "wip",
     },
     {
-      title : "Quiz",
+      title: "Quiz",
       url: "/dashboard/practice/quiz",
       icon: IconPencilQuestion,
-      status: "wip"
+      status: "wip",
     },
     {
-      title : "Speaking Exercise",
+      title: "Speaking Exercise",
       url: "/dashboard/practice/speaking",
       icon: IconLanguage,
-      status: "down"
-    }
+      status: "down",
+    },
   ] as NavItem[],
 
   navLearn: [
@@ -105,37 +113,40 @@ const data = {
       title: "Learn to Speak",
       url: "/dashboard/learn/speak",
       icon: IconListDetails,
-      status: "down"
+      status: "down",
     },
     {
       title: "Learn to Write",
       url: "/dashboard/learn/write",
       icon: IconWriting,
-      status: "down"
+      status: "down",
     },
-  ]as NavItem[],
-}
+  ] as NavItem[],
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { isMobile } = useSidebar();
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              
-            >
+            <SidebarMenuButton asChild>
               <div className="flex flex-col items-center justify-center p-10">
-              <NavbarLogo/>
-
+                <NavbarLogo />
               </div>
+            </SidebarMenuButton>
 
-            </SidebarMenuButton>
-           
             <SidebarMenuButton>
-            <span className="text-bold font-italic text-xl font-semibold pl-8">Conversational AI</span>
+              <span className="text-bold font-italic text-xl font-semibold pl-8">
+                Conversational AI
+              </span>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <Separator />
+          <SidebarMenuItem>
+            <SidebarGroupLabel>Hi, {data.user.name}</SidebarGroupLabel>
+            <Profile user={data.user} />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -146,14 +157,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navLearn} category="Learn Now" />
         <NavMain items={data.navPractice} category="Practice" />
 
-
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
-
-      <SidebarFooter>
-      <SidebarGroupLabel>Profile</SidebarGroupLabel>
-        <NavUser user={data.user} />
-      </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

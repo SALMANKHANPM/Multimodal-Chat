@@ -1,7 +1,8 @@
 import { ProcessOptions } from "@/lib/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://w7kcdj7s-8001.inc1.devtunnels.ms:8001/";
 
 // Check if API is available
 async function checkApiAvailability(): Promise<boolean> {
@@ -22,7 +23,9 @@ export async function validateText(
   try {
     const isApiAvailable = await checkApiAvailability();
     if (!isApiAvailable) {
-      throw new Error("API server is not available. Please ensure the backend service is running.");
+      throw new Error(
+        "API server is not available. Please ensure the backend service is running."
+      );
     }
 
     const response = await fetch(`${API_BASE_URL}/api/py/validate`, {
@@ -41,11 +44,19 @@ export async function validateText(
     return response.json();
   } catch (error) {
     if (error instanceof Error) {
-      if (error.name === 'TimeoutError') {
-        throw new Error("Request timed out. Please check your connection and try again.");
+      if (error.name === "TimeoutError") {
+        throw new Error(
+          "Request timed out. Please check your connection and try again."
+        );
       }
-      if (error.message.includes('fetch failed') || error.message.includes('SocketError')) {
-        throw new Error("Unable to connect to the API server. Please ensure the backend service is running on " + API_BASE_URL);
+      if (
+        error.message.includes("fetch failed") ||
+        error.message.includes("SocketError")
+      ) {
+        throw new Error(
+          "Unable to connect to the API server. Please ensure the backend service is running on " +
+            API_BASE_URL
+        );
       }
     }
     throw error;
@@ -62,7 +73,10 @@ export async function processPrompt(
   try {
     const isApiAvailable = await checkApiAvailability();
     if (!isApiAvailable) {
-      throw new Error("API server is not available. Please ensure the backend service is running on " + API_BASE_URL);
+      throw new Error(
+        "API server is not available. Please ensure the backend service is running on " +
+          API_BASE_URL
+      );
     }
 
     let transcriptionData = { transcription: null, translation: null };
@@ -105,11 +119,18 @@ export async function processPrompt(
       } catch (error) {
         console.error("Transcription error:", error);
         if (error instanceof Error) {
-          if (error.name === 'TimeoutError') {
-            throw new Error("Audio processing timed out. Please try with a shorter audio file.");
+          if (error.name === "TimeoutError") {
+            throw new Error(
+              "Audio processing timed out. Please try with a shorter audio file."
+            );
           }
-          if (error.message.includes('fetch failed') || error.message.includes('SocketError')) {
-            throw new Error("Unable to connect to the transcription service. Please ensure the backend service is running.");
+          if (
+            error.message.includes("fetch failed") ||
+            error.message.includes("SocketError")
+          ) {
+            throw new Error(
+              "Unable to connect to the transcription service. Please ensure the backend service is running."
+            );
           }
         }
         throw new Error("Failed to process audio input");
@@ -155,11 +176,17 @@ export async function processPrompt(
     };
   } catch (error) {
     if (error instanceof Error) {
-      if (error.name === 'TimeoutError') {
+      if (error.name === "TimeoutError") {
         throw new Error("Request timed out. Please try again.");
       }
-      if (error.message.includes('fetch failed') || error.message.includes('SocketError')) {
-        throw new Error("Unable to connect to the API server. Please ensure the backend service is running on " + API_BASE_URL);
+      if (
+        error.message.includes("fetch failed") ||
+        error.message.includes("SocketError")
+      ) {
+        throw new Error(
+          "Unable to connect to the API server. Please ensure the backend service is running on " +
+            API_BASE_URL
+        );
       }
     }
     throw error;
