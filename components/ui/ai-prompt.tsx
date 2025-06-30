@@ -330,7 +330,7 @@ function useVoiceRecording() {
 export function AI_Prompt({ 
   onSendMessage, 
   isLoading = false, 
-  placeholder = "Type your message...",
+  placeholder = "What can I do for you?",
   maxLength = 2000 
 }: AI_PromptProps) {
   const [message, setMessage] = useState("");
@@ -474,85 +474,83 @@ export function AI_Prompt({
 
   return (
     <>
-      <div className="border-t bg-background p-4">
-        <div className="mx-auto max-w-4xl">
-          {/* File previews */}
-          {files.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {files.map((file) => (
-                <div
-                  key={file.id}
-                  className="relative flex items-center gap-2 rounded-lg border bg-muted p-2"
+      <div className="w-full max-w-4xl mx-auto">
+        {/* File previews */}
+        {files.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2 px-4">
+            {files.map((file) => (
+              <div
+                key={file.id}
+                className="relative flex items-center gap-2 rounded-lg border bg-muted p-2"
+              >
+                {file.type === 'image' && file.preview && (
+                  <img
+                    src={file.preview}
+                    alt={file.file.name}
+                    className="h-8 w-8 rounded object-cover"
+                  />
+                )}
+                {file.type === 'audio' && (
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="h-4 w-4" />
+                    {file.audioUrl && (
+                      <audio controls className="h-8">
+                        <source src={file.audioUrl} type="audio/webm" />
+                      </audio>
+                    )}
+                  </div>
+                )}
+                {file.type === 'document' && <FileText className="h-4 w-4" />}
+                
+                <span className="text-sm truncate max-w-32">
+                  {file.file.name}
+                </span>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeFile(file.id)}
+                  className="h-6 w-6 p-0"
                 >
-                  {file.type === 'image' && file.preview && (
-                    <img
-                      src={file.preview}
-                      alt={file.file.name}
-                      className="h-8 w-8 rounded object-cover"
-                    />
-                  )}
-                  {file.type === 'audio' && (
-                    <div className="flex items-center gap-2">
-                      <Volume2 className="h-4 w-4" />
-                      {file.audioUrl && (
-                        <audio controls className="h-8">
-                          <source src={file.audioUrl} type="audio/webm" />
-                        </audio>
-                      )}
-                    </div>
-                  )}
-                  {file.type === 'document' && <FileText className="h-4 w-4" />}
-                  
-                  <span className="text-sm truncate max-w-32">
-                    {file.file.name}
-                  </span>
-                  
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Main input container */}
+        <div className="relative bg-muted/50 rounded-3xl border border-border/50 p-4">
+          <div className="flex items-end gap-3">
+            {/* Attachment button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    onClick={() => removeFile(file.id)}
-                    className="h-6 w-6 p-0"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="shrink-0 rounded-full h-10 w-10 hover:bg-muted"
                   >
-                    <X className="h-3 w-3" />
+                    <Paperclip className="h-5 w-5 text-muted-foreground" />
                   </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Input area */}
-          <div className="flex items-end gap-2">
-            {/* Attachment dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="shrink-0">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                  <ImageIcon className="mr-2 h-4 w-4" />
-                  Upload Image
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Upload Document
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </TooltipTrigger>
+                <TooltipContent>Attach files</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {/* Voice recording button */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={handleVoiceRecord}
                     disabled={!isSupported || isLoading}
-                    className="shrink-0"
+                    className="shrink-0 rounded-full h-10 w-10 hover:bg-muted"
                   >
-                    <Mic className={cn("h-4 w-4", error && "text-destructive")} />
+                    <Mic className={cn("h-5 w-5 text-muted-foreground", error && "text-destructive")} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -570,31 +568,31 @@ export function AI_Prompt({
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 maxLength={maxLength}
-                className="min-h-[44px] max-h-[120px] resize-none pr-12"
+                className="min-h-[44px] max-h-[120px] resize-none border-0 bg-transparent p-0 text-base placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
                 disabled={isLoading}
               />
-              
-              {/* Character count */}
-              {message.length > maxLength * 0.8 && (
-                <div className="absolute bottom-2 right-12 text-xs text-muted-foreground">
-                  {message.length}/{maxLength}
-                </div>
-              )}
             </div>
 
             {/* Send button */}
             <Button
               onClick={handleSend}
               disabled={(!message.trim() && files.length === 0) || isLoading}
-              className="shrink-0"
+              className="shrink-0 rounded-full h-10 w-10 p-0"
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
               )}
             </Button>
           </div>
+
+          {/* Character count */}
+          {message.length > maxLength * 0.8 && (
+            <div className="absolute bottom-2 right-16 text-xs text-muted-foreground">
+              {message.length}/{maxLength}
+            </div>
+          )}
         </div>
       </div>
 
