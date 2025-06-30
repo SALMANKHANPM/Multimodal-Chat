@@ -190,26 +190,8 @@ export function AudioRecorder({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const setupAudioAnalysis = useCallback((stream: MediaStream) => {
+  const setupAudioAnalysis = useCallback(async () => {
     try {
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
-      analyserRef.current.fftSize = 2048;
-      analyserRef.current.smoothingTimeConstant = 0.8;
-    } catch (error) {
-      console.error("Error setting up audio analysis:", error);
-      setError("Failed to setup audio analysis");
-    }
-  }, []);
-
-  const startRecording = async () => {
-    try {
-      setIsPreparing(true);
-      setError(null);
-      
-      // Check for microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -222,8 +204,13 @@ export function AudioRecorder({
       streamRef.current = stream;
       
       // Setup audio analysis
-      setupAudioAnalysis(stream);
+      audioContextRef.current = new AudioContext();
+      const source = audioContextRef.current.createMediaStreamSource(stream);
       
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      source.connect(analyserRef.current);
+
       // Check for MediaRecorder support
       if (!MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
         console.warn('audio/webm;codecs=opus not supported, falling back to default');
@@ -237,8 +224,6 @@ export function AudioRecorder({
       
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
-      setRecordingDuration(0);
-      setVolume(0);
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -287,7 +272,32 @@ export function AudioRecorder({
       onRecordingStateChange?.(true);
       
     } catch (error) {
-      console.error("Error accessing microphone:", error);
+      console.error('Error setting up audio analysis:', error);
+      setIsPreparing(false);
+      setIsRecording(false);
+      onRecordingStateChange?.(false);
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          setError("Microphone access denied. Please allow microphone permissions and try again.");
+        } else if (error.name === 'NotFoundError') {
+          setError("No microphone found. Please connect a microphone and try again.");
+        } else {
+          setError("Unable to access microphone. Please check your permissions and try again.");
+        }
+      }
+    }
+  }, [cleanup, onAudioCaptured, onRecordingStateChange]);
+
+  const startRecording = async () => {
+    try {
+      setError("");
+      setIsRecording(true);
+      setDuration(0);
+
+      await setupAudioAnalysis();
+    } catch (error) {
+      console.error('Error starting voice recording:', error);
       setIsPreparing(false);
       setIsRecording(false);
       onRecordingStateChange?.(false);
@@ -334,6 +344,18 @@ export function AudioRecorder({
     }
   };
 
+  const handleDialogClick = (e: React.MouseEvent) => {
+    // Only stop recording if clicking on the dialog background (not on buttons or content)
+    if (e.target === e.currentTarget && !isPreparing) {
+      stopRecording();
+    }
+  };
+
+  const handleStopClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    stopRecording();
+  };
+
   return (
     <>
       <Button
@@ -356,16 +378,26 @@ export function AudioRecorder({
         onOpenChange={handleDialogOpenChange}
       >
         <DialogContent 
-          className="sm:max-w-md"
+          className="sm:max-w-md cursor-pointer select-none"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
+          onClick={handleDialogClick}
         >
           <DialogHeader>
-            <DialogTitle>Recording Audio ({sourceLang})</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Recording Audio ({sourceLang})</span>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-sm font-mono text-muted-foreground">
+                  {formatDuration(recordingDuration)}
+                </span>
+              </div>
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center space-y-4">
+          
+          <div className="flex flex-col items-center space-y-6 py-4">
             {/* Waveform Visualization */}
-            <div className="w-full bg-black rounded-lg overflow-hidden">
+            <div className="w-full bg-black rounded-lg overflow-hidden border-2 border-blue-500/20">
               <canvas
                 ref={canvasRef}
                 width={400}
@@ -377,41 +409,45 @@ export function AudioRecorder({
             {/* Volume Indicator */}
             <div className="w-full space-y-2">
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Volume</span>
+                <span>Volume Level</span>
                 <span>{volume}%</span>
               </div>
-              <Progress value={volume} className="w-full" />
+              <Progress value={volume} className="w-full h-2" />
             </div>
             
-            {/* Recording Controls */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-mono">
-                {formatDuration(recordingDuration)}
-              </span>
+            {/* Stop Recording Button */}
+            <div className="flex flex-col items-center gap-3">
               <Button
                 variant="destructive"
-                size="icon"
-                onClick={stopRecording}
-                className="relative"
+                size="lg"
+                onClick={handleStopClick}
+                className="relative px-8 py-3 text-base font-medium"
                 disabled={isPreparing}
               >
                 {isPreparing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Processing...
+                  </>
                 ) : (
-                  <Square className="h-4 w-4" />
+                  <>
+                    <Square className="h-5 w-5 mr-2" />
+                    Stop Recording
+                  </>
                 )}
-                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
               </Button>
+              
+              <p className="text-xs text-muted-foreground text-center max-w-xs">
+                Click anywhere in this dialog or press the stop button to finish recording
+              </p>
             </div>
             
-            <p className="text-xs text-muted-foreground text-center">
-              Click the stop button or press Escape to finish recording
-            </p>
-            
             {error && (
-              <p className="text-xs text-destructive text-center">
-                {error}
-              </p>
+              <div className="w-full p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive text-center">
+                  {error}
+                </p>
+              </div>
             )}
           </div>
         </DialogContent>
