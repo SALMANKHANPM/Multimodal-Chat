@@ -334,13 +334,6 @@ export function AudioRecorder({
     }
   };
 
-  const handleDialogClick = (e: React.MouseEvent) => {
-    // Stop recording when clicking anywhere in the dialog
-    if (!isPreparing) {
-      stopRecording();
-    }
-  };
-
   return (
     <>
       <Button
@@ -363,26 +356,16 @@ export function AudioRecorder({
         onOpenChange={handleDialogOpenChange}
       >
         <DialogContent 
-          className="sm:max-w-md cursor-pointer select-none"
+          className="sm:max-w-md"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
-          onClick={handleDialogClick}
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Recording Audio ({sourceLang})</span>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-sm font-mono text-muted-foreground">
-                  {formatDuration(recordingDuration)}
-                </span>
-              </div>
-            </DialogTitle>
+            <DialogTitle>Recording Audio ({sourceLang})</DialogTitle>
           </DialogHeader>
-          
-          <div className="flex flex-col items-center space-y-6 py-4">
+          <div className="flex flex-col items-center space-y-4">
             {/* Waveform Visualization */}
-            <div className="w-full bg-black rounded-lg overflow-hidden border-2 border-blue-500/20">
+            <div className="w-full bg-black rounded-lg overflow-hidden">
               <canvas
                 ref={canvasRef}
                 width={400}
@@ -394,48 +377,41 @@ export function AudioRecorder({
             {/* Volume Indicator */}
             <div className="w-full space-y-2">
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Volume Level</span>
+                <span>Volume</span>
                 <span>{volume}%</span>
               </div>
-              <Progress value={volume} className="w-full h-2" />
+              <Progress value={volume} className="w-full" />
             </div>
             
-            {/* Stop Recording Button */}
-            <div className="flex flex-col items-center gap-3">
+            {/* Recording Controls */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-mono">
+                {formatDuration(recordingDuration)}
+              </span>
               <Button
                 variant="destructive"
-                size="lg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  stopRecording();
-                }}
-                className="relative px-8 py-3 text-base font-medium"
+                size="icon"
+                onClick={stopRecording}
+                className="relative"
                 disabled={isPreparing}
               >
                 {isPreparing ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Processing...
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    <Square className="h-5 w-5 mr-2" />
-                    Stop Recording
-                  </>
+                  <Square className="h-4 w-4" />
                 )}
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
               </Button>
-              
-              <p className="text-xs text-muted-foreground text-center max-w-xs">
-                Click anywhere or press the stop button to finish recording
-              </p>
             </div>
             
+            <p className="text-xs text-muted-foreground text-center">
+              Click the stop button or press Escape to finish recording
+            </p>
+            
             {error && (
-              <div className="w-full p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <p className="text-sm text-destructive text-center">
-                  {error}
-                </p>
-              </div>
+              <p className="text-xs text-destructive text-center">
+                {error}
+              </p>
             )}
           </div>
         </DialogContent>
